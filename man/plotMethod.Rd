@@ -8,7 +8,7 @@
   The function \code{plot.psyvar} plots estimated model coefficients as a network using \code{qgraph}.
 }
 \usage{
-  \method{plot}{qgraph}(object, type = c("fixed","se","random","subject"), lag = 1,subject,...)
+  \method{plot}{psyvar}(object, type = c("fixed","se","random","subject"), lag = 1,subject,...)
 }
 
 \arguments{
