@@ -49,11 +49,7 @@ Parameter for the maximal number of iterations passed to the optimizer
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+psyvar returns a 'psyvar' object containing
 }
 \references{
 %% ~put references to the literature/web site here ~
