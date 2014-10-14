@@ -1,45 +1,37 @@
-
-fixef.psyvar <- function(object) object$fixedEffects
-se.fixef.psyvar <- function(object) object$se.fixedEffects
-
-summary.psyvar <- function(x) x[c('coef','se.coef','pvals')]
-coef.psyvar <- function(x) x$coef
-
-# logLik function:
-logLik.psyvar <- function(object){
-  res <- object$pseudologlik
-  class(res) <- "logLik"
-  attr(res, "df") <- object$df
-  return(res)
-} 
+# # logLik function:
+# logLik.mlVAR <- function(object){
+#   res <- object$pseudologlik
+#   class(res) <- "logLik"
+#   attr(res, "df") <- object$df
+#   return(res)
+# } 
 
 # Plot function:
-plot.psyvar <- function(object, type = c("fixed","se","random","subject"), lag = 1,subject,...){
+plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,...){
   if (type[[1]]=="subject" & missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
   
-  Nodes <- rownames(res$fixedEffects)
-  
+  Nodes <- rownames(x$fixedEffects)
   if (type[[1]]=="fixed"){
     
-    Net <- object$fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(object$fixedEffects))]
+    Net <- x$fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$fixedEffects))]
     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
     
   } else if (type[[1]]=="se"){
     
-    Net <- object$se.fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(object$se.fixedEffects))]
+    Net <- x$se.fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$se.fixedEffects))]
     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
     
   } else if (type[[1]]=="random"){
     
-    Net <- object$randomEffectsVariance[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(object$randomEffectsVariance))]
+    Net <- x$randomEffectsVariance[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffectsVariance))]
     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
     
     
   }  else if (type[[1]]=="subject"){
     
-    Net <- object$randomEffects[[subject]][,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(object$randomEffects[[subject]]))]
+    Net <- x$randomEffects[[subject]][,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffects[[subject]]))]
     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
     
   } else stop("'type' is not supported")
@@ -48,3 +40,17 @@ plot.psyvar <- function(object, type = c("fixed","se","random","subject"), lag =
 }
 
 
+# Print and summary:
+summary.mlVAR <- function(object,...){
+  input <- object$input
+  
+  inputstr <- paste(sapply(seq_along(input),function(i)paste0(names(input)[i],":\t\t",paste(input[[i]],collapse=", "))), collapse = "\n")
+  
+  cat(paste0("==== mlVAR results ====\n",inputstr,"\n\nNumber of random effects:\t\t",length(object$randomEffects),"\n",
+             "pseudo log-likeligood:\t\t",round(object$pseudologlik,2),"\n",
+             "Degrees of Freedom:\t\t",round(object$df,2),"\n",
+             "BIC:\t\t",round(object$BIC,2)             
+             ))
+}
+
+print.mlVAR <- function(x,...) summary.mlVAR(x,...)

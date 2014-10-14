@@ -1,19 +1,19 @@
-\name{plot.psyvar}
-\alias{plot.psyvar}
+\name{plot.mlVAR}
+\alias{plot.mlVAR}
 
 \title{
-  Plot Method for \code{psyvar}
+  Plot Method for \code{mlVAR}
 }
 \description{
-  The function \code{plot.psyvar} plots estimated model coefficients as a network using \code{qgraph}.
+  The function \code{plot.mlVAR} plots estimated model coefficients as a network using \code{qgraph}.
 }
 \usage{
-  \method{plot}{psyvar}(object, type = c("fixed","se","random","subject"), lag = 1,subject,...)
+  \method{plot}{mlVAR}(x, type = c("fixed","se","random","subject"), lag = 1,subject,...)
 }
 
 \arguments{
-  \item{object}{
-    A \code{psyvar} object obtained through the \code{\link{psyvar}}-function
+  \item{x}{
+    A \code{mlVAR} object obtained through the \code{\link{mlVAR}}-function
   }
   \item{type}{
   Indicates whether to plot a network of fixed effects coefficients ("fixed"), the standard deviations of the fixed effects ("se"), the variances of the random effect terms ("random") or an individual subject's random effects network ("subject").
@@ -35,5 +35,5 @@
 }
 
 \author{
-  Sacha Epskamp (mail@sachaepskamp.com)
+Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and Laura F. Bringmann (laura.bringmann@ppw.kuleuven.be)
 }

@@ -1,4 +1,4 @@
-psyvar <- function(
+mlVAR <- function(
   data, # Data frame
   vars, # Vector of variables to include in analysis
   idvar, # String indicating the subject id variable name 
@@ -15,33 +15,39 @@ psyvar <- function(
   stopifnot(!missing(vars))
   stopifnot(!missing(idvar))
   
+  # inout list (to include in output):
+  input <- list(vars = vars, lags = lags)
+  
   # Add day id if missing:
   if (missing(idvar))
   {
     idvar <- "ID"
     data[[idvar]] <- 1
-  }
+  } else input$idvar <- idvar
   
   # Add day var if missing:
   if (missing(dayvar))
   {
     dayvar <- "DAY"
     data[[dayvar]] <- 1
-  }
+  } else input$dayvar <- dayvar
   
   # Add beep var if missing:
   if (missing(beepvar))
   {
     beepvar <- "BEEP"
     data[[beepvar]] <- ave(data[[idvar]],data[[idvar]],data[[dayvar]],FUN = seq_along)
-  }
+  } else input$beepvar <- beepvar
   
   # Add period var if missing:
   if (missing(periodvar))
   {
     periodvar <- "PERIOD"
     data[[periodvar]] <- 1
-  }
+  } else input$periodvar <- periodvar
+  
+  if (!missing(treatmentvar)) input$treatmentvar <- treatmentvar
+  if (!missing(covariates)) input$covariates <- covariates
   
   # Remove NA period, day or beeps:
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[periodvar]])  &  !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
@@ -173,10 +179,11 @@ psyvar <- function(
     pvals = 2*(1-pnorm(abs(Coef/se.Coef))),
     pseudologlik = logLik,
     df = df,
-    BIC = BIC)
+    BIC = BIC,
+    input = input)
   #     results = Results)
   
-  class(out) <- "psyvar"
+  class(out) <- "mlVAR"
   
   return(out)  
 }
