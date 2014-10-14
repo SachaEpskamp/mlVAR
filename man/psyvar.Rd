@@ -43,6 +43,7 @@ Character indicating covariates independent of assessment.
   \item{maxiter}{
 Parameter for the maximal number of iterations passed to the optimizer
 }
+
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
