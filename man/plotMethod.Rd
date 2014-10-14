@@ -30,9 +30,6 @@
   }
 }
 
-\details{
- 
-}
 
 \author{
 Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and Laura F. Bringmann (laura.bringmann@ppw.kuleuven.be)

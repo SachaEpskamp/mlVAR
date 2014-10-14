@@ -65,9 +65,7 @@ Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters,
 \author{
 Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and Laura F. Bringmann (laura.bringmann@ppw.kuleuven.be)
 }
-\note{
-%%  ~~further notes~~
-}
+
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
@@ -91,10 +89,10 @@ L2 <- matrix(c(
 error <- 0.1
 
 # Number of subjects:
-Np <- 10
+Np <- 5
 
 # Number of measurements per subject:
-Nt <- 50
+Nt <- 20
 
 # Generate random effects:
 L1_RF <- lapply(1:Np, function(x) L1 + rnorm(prod(dim(L1)),0,error))
