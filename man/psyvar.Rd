@@ -8,7 +8,8 @@ Multilevel VAR Estimation for Multiple Time Series
 The function psyvar computes estimates of the multivariate vector autoregression model as introduced by Bringmann et al. (2013) which can be extended through treatment effects, covariates and pre- and post assessment effects. 
 }
 \usage{
-psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, maxiter = 800)
+psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, 
+        control = list(optimizer = "bobyqa"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -40,8 +41,8 @@ Character vector indicating treatment
   \item{covariates}{
 Character indicating covariates independent of assessment.
 }
-  \item{maxiter}{
-Parameter for the maximal number of iterations passed to the optimizer
+  \item{control}{
+ A list of arguments sent to \code{\link[lme4]{lmerControl}}
 }
 
 }
@@ -56,6 +57,7 @@ Psyvar returns a 'psyvar' object containing
  \item{pvals}{A matrix that contains p-values for all fixed effects.}
  \item{pseudologlik}{The pseudo log-likelihood.}
  \item{BIC}{Bayesian Information Criterion, i.e. the sum of all univariate models' BICs}
+ \item{input}{List containing the names of variables used in the analysis}
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
