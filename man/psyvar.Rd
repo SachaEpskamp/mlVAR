@@ -5,7 +5,7 @@
 Multilevel VAR Estimation for Multiple Time Series
 }
 \description{
-The function psyvar computes estimates of the multivariate vector autoregression model as introduced by Bringmann et al. (2013) which can be extended through treatment effects, covariates and pre- and post assessment effects. 
+The function \code{psyvar} computes estimates of the multivariate vector autoregression model as introduced by Bringmann et al. (2013) which can be extended through treatment effects, covariates and pre- and post assessment effects. 
 }
 \usage{
 psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, maxiter = 800)

@@ -2,10 +2,10 @@
 \alias{plot.psyvar}
 
 \title{
-  Plot method for "psyvar"
+  Plot Method for \code{psyvar}
 }
 \description{
-  Plots an object created by \code{\link{psyvar}}.
+  Plots estimated model coefficients as a network using \code{qgraph}.
 }
 \usage{
   \method{plot}{qgraph}(object, type = c("fixed","se","random","subject"), lag = 1,subject,...)
@@ -13,17 +13,16 @@
 
 \arguments{
   \item{object}{
-    A "psyvar" object
+    A \code{psyvar} object
   }
   \item{type}{
-  
-  
+  Indicates whether to plot a network of fixed effects coefficients ("fixed"), the standard deviations of the fixed effects ("se"), the variances of the random effect terms ("random") or an individual subject's random effects network ("subject").
   }
   \item{lag}{
-  
-  
+  Vector indicating the lags to include
   }
   \item{subject}{
+  If type="subject", vector indicating the ID subject number
   
   }
   \item{\dots}{
