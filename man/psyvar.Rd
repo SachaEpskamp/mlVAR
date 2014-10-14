@@ -2,10 +2,10 @@
 \alias{psyvar}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Multilevel VAR estimation for multiple time series
+Multilevel VAR Estimation for Multiple Time Series
 }
 \description{
-Psyvar is based on a method introduced by Bringmann et al. (2013). It has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. Each variable (node in the network) at time point $t$ is regressed to a lagged version of itself at time point $t-1$ and all other variables at time point $t-1$. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day (as assessed by experience sampling methods) to the dynamics of these symptoms on the consecutive day. 
+The function psyvar computes estimates of the multivariate vector autoregression model as introduced by Bringmann et al. (2013) which can be extended through treatment effects, covariates and pre- and post assessment effects. 
 }
 \usage{
 psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, maxiter = 800)
@@ -46,18 +46,22 @@ Parameter for the maximal number of iterations passed to the optimizer
 
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+Psyvar has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. For example, in a lag-1-model each variable at time point t is regressed to a lagged version of itself at time point t-1 and all other variables at time point t-1. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day (as assessed by experience sampling methods) to the dynamics of these symptoms on the consecutive day. }
 \value{
-psyvar returns a 'psyvar' object containing
+Psyvar returns a 'psyvar' object containing
+ \item{fixedEffects}{A matrix that contains all fixed effects coefficients with dependent variables as rows and the lagged independent variables as columns.}
+ \item{se.fixedEffects}{A matrix that contains all standard errors of the fixed effects.}
+ \item{randomEffects}{A list of matrices that contain the random effects coefficients.}
+ \item{randomEffectsVariance}{A matrix containing the estimated variances between the random-effects terms}
+ \item{pvals}{A matrix that contains p-values for all fixed effects.}
+ \item{pseudologlik}{The pseudo log-likelihood.}
+ \item{BIC}{Bayesian Information Criterion, i.e. the sum of all univariate models' BICs}
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
 }
 \author{
-Sacha Epskamp <mail@sachaepskamp.com>
-Marie K. Deserno <m.k.deserno@uva.nl>
-Laura F. Bringmann <laura.bringmann@ppw.kuleuven.be>
+Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and Laura F. Bringmann (laura.bringmann@ppw.kuleuven.be)
 }
 \note{
 %%  ~~further notes~~
