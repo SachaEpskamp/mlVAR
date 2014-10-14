@@ -5,7 +5,7 @@
 Multilevel VAR estimation for multiple time series
 }
 \description{
-Psyvar is based on a method introduced by Bringmann et al. (2013). It has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. Each variable (node in the network) at time point $t$ is regressed to a lagged version of itself at time point $t-1$ and all other variables at time point $t-1$. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day to the dynamics of these symptoms on the consecutive day. 
+Psyvar is based on a method introduced by Bringmann et al. (2013). It has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. Each variable (node in the network) at time point $t$ is regressed to a lagged version of itself at time point $t-1$ and all other variables at time point $t-1$. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day (as assessed by experience sampling methods) to the dynamics of these symptoms on the consecutive day. 
 }
 \usage{
 psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, maxiter = 800)
@@ -52,10 +52,12 @@ Parameter for the maximal number of iterations passed to the optimizer
 psyvar returns a 'psyvar' object containing
 }
 \references{
-%% ~put references to the literature/web site here ~
+Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
 }
 \author{
-%%  ~~who you are~~
+Sacha Epskamp <mail@sachaepskamp.com>
+Marie K. Deserno <m.k.deserno@uva.nl>
+Laura F. Bringmann <laura.bringmann@ppw.kuleuven.be>
 }
 \note{
 %%  ~~further notes~~
