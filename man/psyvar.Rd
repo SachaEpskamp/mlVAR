@@ -2,45 +2,46 @@
 \alias{psyvar}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Multilevel VAR estimation
+Multilevel VAR estimation for multiple time series
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Psyvar is based on a method introduced by Bringmann et al. (2013). It has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. Each variable (node in the network) at time point $t$ is regressed to a lagged version of itself at time point $t-1$ and all other variables at time point $t-1$. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day to the dynamics of these symptoms on the consecutive day. 
 }
 \usage{
 psyvar(data, vars, idvar, dayvar, beepvar, periodvar, lags = 1, treatmentvar, covariates, maxiter = 800)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
+
   \item{data}{
-%%     ~~Describe \code{data} here~~
+Data frame
 }
   \item{vars}{
-%%     ~~Describe \code{vars} here~~
+Vectors of variables to include in the analysis
 }
   \item{idvar}{
-%%     ~~Describe \code{idvar} here~~
+String indicating the subject ID
 }
   \item{dayvar}{
-%%     ~~Describe \code{dayvar} here~~
+String indicating assessment day (if missing, every assessment is set to one day)
 }
   \item{beepvar}{
-%%     ~~Describe \code{beepvar} here~~
+String indicating assessment beep per day (if missing, is added)
 }
   \item{periodvar}{
-%%     ~~Describe \code{periodvar} here~~
+String indicating the period (baseline, treatment period, etc.) of assessment (if missing, every assessment is set to one period)
 }
   \item{lags}{
-%%     ~~Describe \code{lags} here~~
+Vector indicating the lags to include
 }
   \item{treatmentvar}{
-%%     ~~Describe \code{treatmentvar} here~~
+Character vector indicating treatment
 }
   \item{covariates}{
-%%     ~~Describe \code{covariates} here~~
+Character indicating covariates independent of assessment.
 }
   \item{maxiter}{
-%%     ~~Describe \code{maxiter} here~~
+Parameter for the maximal number of iterations passed to the optimizer
 }
 }
 \details{
