@@ -1,21 +1,16 @@
 psyvar <- function(
   data, # Data frame
   vars, # Vector of variables to include in analysis
-  idvar, # String indicating the subject id variable name
+  idvar, # String indicating the subject id variable name 
   dayvar, # string indicating the measurement id variable name (if missing, every measurement is set to one day)
   beepvar, # String indicating beep per day (is missing, is added)
   periodvar, # string indicating the period of measurement.
   lags = 1, # Vector indicating the lags to include
   treatmentvar, # character vector indicating treatment
   covariates, # character indicating covariates independent of measurement.
-  maxiter = 800
+  control = list(optimizer = "bobyqa") # "bobyqa"  or "Nelder_Mead"
 )
 {
-  # Load packages:
-  stopifnot(require("plyr"))
-  stopifnot(require("lme4"))
-  stopifnot(require("arm"))
-  
   # Check input:
   stopifnot(!missing(vars))
   stopifnot(!missing(idvar))
@@ -52,7 +47,7 @@ psyvar <- function(
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[periodvar]])  &  !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
   
   # Create augmented lagged data:
-  augData <- ddply(data, c(idvar,dayvar,periodvar), function(x){
+  augData <- plyr::ddply(data, c(idvar,dayvar,periodvar), function(x){
     # Check for duplicate beeps:
     if (any(duplicated(x[[beepvar]])))
     {
@@ -140,22 +135,24 @@ psyvar <- function(
   pb <- txtProgressBar(min=0,max=length(vars),style=3)
   for (j in seq_along(vars)){
     ff <- as.formula(paste(vars[j],"~",Pred))
-    Results[[j]] <- lmer(ff,data=augData, control = lmerControl(optCtrl=list(maxIter=maxiter)),REML=FALSE)
+    Results[[j]] <- lme4::lmer(ff,data=augData, control = do.call('lmerControl',control),REML=FALSE)
     setTxtProgressBar(pb, j)
   }
   close(pb)
   
   # Extract info:
+  logLik <- sum(unlist(lapply(Results,logLik)))
+  df <- sum(unlist(lapply(lapply(Results,logLik),attr,'df')))
   BIC <- sum(unlist(lapply(Results,BIC)))
   Coef <- do.call(rbind,lapply(Results,fixef))
   se.Coef <- do.call(rbind,lapply(Results,se.fixef))
-  colnames(Coef) <- names(fixef(Results[[1]]))
-  colnames(se.Coef) <- names(fixef(Results[[1]]))
-  rownames(Coef) <- columns
-  rownames(se.Coef) <- columns
+  colnames(Coef) <- names(lme4::fixef(Results[[1]]))
+  colnames(se.Coef) <- names(lme4::fixef(Results[[1]]))
+  rownames(Coef) <- vars
+  rownames(se.Coef) <- vars
   
   # Random effects:
-  ranEffects <- lapply(Results, ranef)
+  ranEffects <- lapply(Results, lme4::ranef)
   ranPerID <- list()
   for (i in seq_len(nrow(ranEffects[[1]][[idvar]]))){
     ranPerID[[i]] <- do.call(rbind, lapply(ranEffects,function(x)x[[idvar]][i,]))  
@@ -164,7 +161,7 @@ psyvar <- function(
   names(ranPerID) <- rownames( ranEffects[[1]][[idvar]] )
   
   # Variance of random effects:
-  Variance <- do.call(rbind,lapply(Results,function(x)diag(VarCorr(x)[[idvar]])))
+  Variance <- do.call(rbind,lapply(Results,function(x)diag(lme4::VarCorr(x)[[idvar]])))
   rownames(Variance) <- vars
   
   # Output:
@@ -174,6 +171,8 @@ psyvar <- function(
     randomEffects =  ranPerID,
     randomEffectsVariance = Variance,
     pvals = 2*(1-pnorm(abs(Coef/se.Coef))),
+    pseudologlik = logLik,
+    df = df,
     BIC = BIC)
   #     results = Results)
   
