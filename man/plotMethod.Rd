@@ -2,7 +2,7 @@
 \alias{plot.mlVAR}
 
 \title{
-  Plot Method for \code{mlVAR}
+  Plot Method for mlVAR
 }
 \description{
   The function \code{plot.mlVAR} plots estimated model coefficients as a network using \code{qgraph}.

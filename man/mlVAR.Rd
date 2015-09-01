@@ -73,6 +73,7 @@ Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and
 \code{\link{fixedEffects}}, \code{\link{fixedEffects}}
 }
 \examples{
+\dontrun{
 # True L1 structure:
 L1 <- matrix(c(
   0.5,0.25,0,
@@ -89,10 +90,10 @@ L2 <- matrix(c(
 error <- 0.1
 
 # Number of subjects:
-Np <- 5
+Np <- 10
 
 # Number of measurements per subject:
-Nt <- 20
+Nt <- 30
 
 # Generate random effects:
 L1_RF <- lapply(1:Np, function(x) L1 + rnorm(prod(dim(L1)),0,error))
@@ -109,7 +110,6 @@ Data <- do.call(rbind,lapply(1:Np, function(p) {
 # Run analysis:
 Res <- mlVAR(Data, paste0('x',1:3), "ID", lags = c(1, 2))
 
-\dontrun{
   library("qgraph")
   
   # Plot true fixed VAR network vs estimated fixed VAR network:
