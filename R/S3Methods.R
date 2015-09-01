@@ -7,33 +7,85 @@
 # } 
 
 # Plot function:
+# plot.mlVAR_MW <- function(x, lag = 1, ...){
+#   fixef <- fixedEffects(x)
+#   
+#   # Extract only lagged variables:
+#   sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
+#   
+#   # make matrix:
+#   Nodes <- as.character(unique(sub$Response))
+#   nNode <- length(Nodes)
+#   Network <- matrix(0, nNode, nNode)
+#   for (i in seq_along(Nodes)){
+#     Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+#   }
+#   
+#   Graph <- qgraph(Network, labels=Nodes, ...)
+#   invisible(Graph)
+# }
+
+
 plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,...){
   if (type[[1]]=="subject" & missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
-  
+
   Nodes <- rownames(x$fixedEffects)
   if (type[[1]]=="fixed"){
+    fixef <- fixedEffects(x)
     
-    Net <- x$fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$fixedEffects))]
-    Graph <- qgraph(t(Net), labels=rownames(Net), ...)
+    # Extract only lagged variables:
+    sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
     
+    # make matrix:
+    Nodes <- as.character(unique(sub$Response))
+    nNode <- length(Nodes)
+    Network <- matrix(0, nNode, nNode)
+    for (i in seq_along(Nodes)){
+      Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+    }
+    
+    Graph <- qgraph(Network, labels=Nodes, ...)
   } else if (type[[1]]=="se"){
+    fixef <- fixedEffects(x)
     
-    Net <- x$se.fixedEffects[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$se.fixedEffects))]
-    Graph <- qgraph(t(Net), labels=rownames(Net), ...)
+    # Extract only lagged variables:
+    sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
+    
+    # make matrix:
+    Nodes <- as.character(unique(sub$Response))
+    nNode <- length(Nodes)
+    Network <- matrix(0, nNode, nNode)
+    for (i in seq_along(Nodes)){
+      Network[,i] <- sub$se[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+    }
+    
+    Graph <- qgraph(Network, labels=Nodes, ...)
     
   } else if (type[[1]]=="random"){
     
-    Net <- x$randomEffectsVariance[,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffectsVariance))]
-    Graph <- qgraph(t(Net), labels=rownames(Net), ...)
+    ranef <- randomEffects(x)
     
+    # Extract only lagged variables:
+    sub <- ranef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
+    
+    # make matrix:
+    Nodes <- as.character(unique(sub$Response))
+    nNode <- length(Nodes)
+    Network <- matrix(0, nNode, nNode)
+    for (i in seq_along(Nodes)){
+      Network[,i] <- sub$variance[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+    }
+    
+    Graph <- qgraph(Network, labels=Nodes, ...)
     
   }  else if (type[[1]]=="subject"){
-    
-    Net <- x$randomEffects[[subject]][,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffects[[subject]]))]
-    Graph <- qgraph(t(Net), labels=rownames(Net), ...)
-    
+      
+      stop("Currently not supported")    
+#     Net <- x$randomEffects[[subject]][,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffects[[subject]]))]
+#     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
+#     
   } else stop("'type' is not supported")
   
   invisible(Graph)
