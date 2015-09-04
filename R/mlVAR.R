@@ -10,7 +10,9 @@ mlVAR <- function(
   covariates, # character indicating covariates independent of measurement.
   control = list(optimizer = "bobyqa"), # "bobyqa"  or "Nelder_Mead"
   windowSize, # Assign to use moving window estimation. If missing, does not use moving window estimation
-  progress = TRUE # Include progress bar?
+  progress = TRUE, # Include progress bar?
+  timevar,
+  laginteractions = FALSE # Include interactions with lag?
 )
 {
   # Check input:
@@ -97,12 +99,32 @@ mlVAR <- function(
   # All lagged variables:
   AllLagVars <- c(sapply(lags, function(l) paste0("L",l,"_",vars)))
   
+
+
+  # Lag interactions:
+  if (laginteractions){
+    if (missing(timevar)) stop("'timevar' needed to include laginteractions")
+    
+      call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = c(diff(x),NA)),
+                         list(x = as.name(timevar)))
+      augData <- eval(call)
+      
+      for (it in seq_along(vars)){
+        augData[[paste0("lag_x_",vars[it])]] <- augData[[vars[it]]] * augData$LAGDIFF
+      }
+
+      
+      AllLagVars <- c(AllLagVars,paste0("lag_x_",vars),"LAGDIFF")
+     
+  }
+  
   # Vector of lagged variables for fixed effects:
   lagVars <- paste(AllLagVars,collapse = " + ")
   
   # Add to predictor set:
   Pred <- c(Pred, paste("(",lagVars,")"))
-
+  
+  
   # If period has more than 1 level:
   if (length(unique(augData[[periodvar]])) > 1)
   {
@@ -122,14 +144,14 @@ mlVAR <- function(
       Pred <- c(Pred, paste(periodvar,  ": (",lagVars,") : ", treatmentvar))
     }
     
-#     # Random effects:
-#     ### -1????
-#     Pred <- c(Pred, paste0("( factor(",periodvar,") - 1 + ",lagVarsRand," |",idvar,")"))
+    #     # Random effects:
+    #     ### -1????
+    #     Pred <- c(Pred, paste0("( factor(",periodvar,") - 1 + ",lagVarsRand," |",idvar,")"))
   } #else {
-    # Random effects:
-#     ### -1????
-#     Pred <- c(Pred, paste0("(",lagVarsRand," |",idvar,")"))
-#   }
+  # Random effects:
+  #     ### -1????
+  #     Pred <- c(Pred, paste0("(",lagVarsRand," |",idvar,")"))
+  #   }
   
   
   # Covariate:
@@ -153,11 +175,11 @@ mlVAR <- function(
   
   # Construct the window matrix:
   Neffect <- length(AllLagVars) - 1
-
-
+  
+  
   if (!missing(windowSize)){
     # Number of possible effects to include is amount of lagged - 1 (autocor is always included):
-
+    
     
     # Window matrix is Neffect * windowSize
     # Randomize:
@@ -166,7 +188,7 @@ mlVAR <- function(
                            Neffect, windowSize, byrow=TRUE)
     
   } else WindowMatrix <- matrix(1:Neffect,1)
-
+  
   cur <- 1
   for (j in seq_along(vars)){
     
@@ -181,7 +203,7 @@ mlVAR <- function(
       ff <- as.formula(paste(vars[j],"~",PredCur))
       Results[[cur]] <- lme4::lmer(ff,data=augData, control = do.call('lmerControl',control),REML=FALSE)
       formulas[[cur]] <- ff
-
+      
       # Extract fixed effects:
       feCur <- fixef(Results[[cur]])
       FixEf[[cur]] <- feCur[names(feCur) %in% c("(Intercept)",RandsCur)]
@@ -200,7 +222,7 @@ mlVAR <- function(
   if (progress){
     close(pb)    
   }
-
+  
   
   # Extract info:
   if (!missing(windowSize)){
@@ -216,9 +238,9 @@ mlVAR <- function(
   
   Coef <- rbind_all(lapply(FixEf,function(x)as.data.frame(t(x))))
   se.Coef <- rbind_all(lapply(FixEf_SE,function(x)as.data.frame(t(x))))
-
+  
   pvals <- as.data.frame(2*(1-pnorm(abs(as.matrix(Coef)/as.matrix(se.Coef)))))
-
+  
   
   Coef <- cbind(dep = rep(vars,each=nrow(WindowMatrix)), Coef)
   se.Coef <- cbind(dep = rep(vars,each=nrow(WindowMatrix)), se.Coef)
@@ -236,7 +258,7 @@ mlVAR <- function(
   # Variance of random effects:
   Variance <- rbind_all(lapply(Results,function(x)as.data.frame(t(diag(lme4::VarCorr(x)[[idvar]])))))
   Variance <- cbind(dep =  rep(vars,each=Neffect), Variance)
-
+  
   # Output:
   out <- list(
     fixedEffects = Coef,
