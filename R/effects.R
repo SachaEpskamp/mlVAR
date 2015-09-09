@@ -1,4 +1,10 @@
-
+asterix <- function(x){
+  y <- rep("",length(x))
+  y[x<0.05] <- "*"
+  y[x<0.01] <- "**"
+  y[x<0.001] <- "***"
+  y
+}
 
 ## fixedEffects:
 fixedEffects <- function(object){
@@ -20,8 +26,9 @@ fixedEffects <- function(object){
     Response = object$fixedEffects$dep,
     Predictor = Predictor[col(coef)],
     effect = c(coef),
-    se = c(coef),
-    p = c(coef)
+    se = c(s.coef),
+    p = c(pvals),
+    ` ` = asterix(c(pvals))
   )
   
   if (any(duplicated(df[c("Response","Predictor")]))){

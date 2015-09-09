@@ -12,9 +12,11 @@ mlVAR <- function(
   windowSize, # Assign to use moving window estimation. If missing, does not use moving window estimation
   progress = TRUE, # Include progress bar?
   timevar,
-  laginteractions = FALSE # Include interactions with lag?
+  laginteractions = c("none","mains","interactions") # Include interactions with lag?
 )
 {
+  laginteractions <- match.arg(laginteractions)
+  
   # Check input:
   stopifnot(!missing(vars))
   stopifnot(!missing(idvar))
@@ -102,20 +104,29 @@ mlVAR <- function(
 
 
   # Lag interactions:
-  if (laginteractions){
+  if (laginteractions != "none"){
     if (missing(timevar)) stop("'timevar' needed to include laginteractions")
     
       call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = c(NA,diff(x))),
                          list(x = as.name(timevar)))
       augData <- eval(call)
       
-      for (it in seq_along(vars)){
-        augData[[paste0("lag_x_",vars[it])]] <- augData[[vars[it]]] * augData$LAGDIFF
+      
+      AllLagVars <- c(AllLagVars,"LAGDIFF")
+      
+      
+      if (laginteractions == "interactions"){
+        
+        for (it in seq_along(vars)){
+          augData[[paste0("lag_x_",vars[it])]] <- augData[[vars[it]]] * augData$LAGDIFF
+        }    
+        
+        AllLagVars <- c( AllLagVars ,paste0("lag_x_",vars))
+
+        
       }
 
-      
-      AllLagVars <- c(AllLagVars,paste0("lag_x_",vars),"LAGDIFF")
-     
+
   }
 
   # Vector of lagged variables for fixed effects:
