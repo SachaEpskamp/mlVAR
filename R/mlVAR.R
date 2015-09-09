@@ -105,7 +105,7 @@ mlVAR <- function(
   if (laginteractions){
     if (missing(timevar)) stop("'timevar' needed to include laginteractions")
     
-      call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = c(diff(x),NA)),
+      call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = c(NA,diff(x))),
                          list(x = as.name(timevar)))
       augData <- eval(call)
       
@@ -117,7 +117,7 @@ mlVAR <- function(
       AllLagVars <- c(AllLagVars,paste0("lag_x_",vars),"LAGDIFF")
      
   }
-  
+
   # Vector of lagged variables for fixed effects:
   lagVars <- paste(AllLagVars,collapse = " + ")
   
