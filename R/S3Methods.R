@@ -42,8 +42,10 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     Nodes <- as.character(unique(sub$Response))
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
+
     for (i in seq_along(Nodes)){
-      Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+      # Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+      Network[ match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes),i] <- sub$effect[sub$Response==Nodes[i]]
     }
     
     Graph <- qgraph(Network, labels=Nodes, ...)
@@ -58,8 +60,10 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
     for (i in seq_along(Nodes)){
-      Network[,i] <- sub$se[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+      # Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+      Network[ match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes),i] <- sub$se[sub$Response==Nodes[i]]
     }
+
     
     Graph <- qgraph(Network, labels=Nodes, ...)
     

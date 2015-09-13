@@ -35,6 +35,9 @@ fixedEffects <- function(object){
     message("Duplicate effects found (possibly due to moving window approach), averaging effect, se and p-value.")
     df <- df %>% group_by_("Response","Predictor") %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("effect","se","p"))
   }
+
+  # Remove NA rows:
+  df <- df %>% filter(!is.na(effect))
   
   return(df)
 }
@@ -60,6 +63,9 @@ randomEffects<- function(object){
     df <- df %>% group_by_("Response","Predictor") %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("variance"))
   }
   
+  # Remove NA rows:
+  df <- df %>% filter(!is.na(variance))
   
+  return(df)
   return(df)
 }
