@@ -7,7 +7,7 @@ asterix <- function(x){
 }
 
 ## fixedEffects:
-fixedEffects <- function(object){
+fixedEffects <- function(object,digits=5){
   if (is(object,"mlVAR_MW")){
     return(object$fixedEffects)
   }
@@ -20,15 +20,15 @@ fixedEffects <- function(object){
   coef <- as.matrix(object$fixedEffects[,-1])
   s.coef <- as.matrix(object$se.fixedEffects[,-1])
   pvals <- as.matrix(object$pvals[,-1])
-  
+
   # Data frame of fixed effects:
   df <- data.frame(
     Response = object$fixedEffects$dep,
     Predictor = Predictor[col(coef)],
-    effect = c(coef),
-    se = c(s.coef),
-    p = c(pvals),
-    ` ` = asterix(c(pvals))
+    effect = round(c(coef),digits),
+    se = round(c(s.coef),digits),
+    p = round(c(pvals),digits),
+    sig = asterix(c(pvals))
   )
   
   if (any(duplicated(df[c("Response","Predictor")]))){
@@ -44,7 +44,7 @@ fixedEffects <- function(object){
 
 
 # Random effects:
-randomEffects<- function(object){
+randomEffects<- function(object, digits=5){
   if (is(object,"mlVAR_MW")) stop("Cannot estimate random effects with moving window approach")
   
   # Predictors:
@@ -54,7 +54,7 @@ randomEffects<- function(object){
   df <- data.frame(
     Response = object$randomEffectsVariance$dep,
     Predictor = Predictor[col(object$randomEffectsVariance[,-1])],
-    variance = unlist(object$randomEffectsVariance[,-1])
+    variance = round(unlist(object$randomEffectsVariance[,-1]),digits)
   )
   rownames(df) <- NULL
   
