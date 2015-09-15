@@ -15,7 +15,8 @@ mlVAR <- function(
   laginteractions = c("none","mains","interactions"), # Include interactions with lag?
   stepwise = FALSE, # If TRUE. Each nodewise model will be estimated in step up fashion; start with main effects and auto-regressions, then add lagged regressions one at a time to optimize BIC.
   critFun = BIC,
-  maxEffects = 6
+  maxEffects = 6,
+  maxTimeDiff # If not missing. maximum time difference.
 )
 {
   laginteractions <- match.arg(laginteractions)
@@ -102,12 +103,17 @@ mlVAR <- function(
   
   # Lagged interactions:
   # Lag interactions:
-  if (laginteractions != "none"){
-    if (missing(timevar)) stop("'timevar' needed to include laginteractions")
+  if (laginteractions != "none" || !missing(maxTimeDiff)){
+    if (missing(timevar)) stop("'timevar' needed to include time difference")
     
-    call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = c(NA,diff(x))),
+    call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = as.numeric(c(NA,difftime(x[-1],x[-length(x)],units="hours")))),
                        list(x = as.name(timevar)))
     augData <- eval(call)
+    
+    
+  }
+  if (laginteractions != "none"){
+
     
     AllLagVars <- c(AllLagVars,"LAGDIFF")
     
@@ -118,6 +124,10 @@ mlVAR <- function(
       }    
       AllLagVars <- c( AllLagVars ,paste0("lag_x_",vars))
     }
+  }
+  
+  if ( !missing(maxTimeDiff)){
+    augData <- augData %>% filter_(~LAGDIFF < maxTimeDiff)
   }
   
   ### RUN NODEWISE ANALYSES ###
