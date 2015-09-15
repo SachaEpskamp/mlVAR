@@ -16,7 +16,7 @@ Stepwise <- function(
     laggedVars =   curModel,
     ...
   )
-  
+
   curCrit <- critFun(CurResult$lmerResult)
   propModels <- list()
   propResults <- list()

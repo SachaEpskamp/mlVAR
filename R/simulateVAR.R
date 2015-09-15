@@ -5,7 +5,7 @@ simulateVAR <- function(
   lags = 1, # A sequence of lags that corresponds to the lags of each matrix in the 'pars' argument
   Nt, # Number of time points to sample
   init, # Initial state, defaults to zeros
-  errorSD = 0.1
+  errorSD = 0.1 # Can also be a matrix of residual covariances!
 )
 {
   if (is.matrix(pars)) pars <- list(pars)

@@ -26,12 +26,12 @@
 # }
 
 
-plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,...){
+plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,order,...){
   if (type[[1]]=="subject" & missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
 
-  Nodes <- rownames(x$fixedEffects)
+  # Nodes <- rownames(x$fixedEffects)
   if (type[[1]]=="fixed"){
     fixef <- fixedEffects(x)
     
@@ -40,6 +40,10 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     
     # make matrix:
     Nodes <- as.character(unique(sub$Response))
+    if (!missing(order)){
+      if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
+      Nodes <- Nodes[match(order,Nodes)]
+    }
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
 
@@ -57,6 +61,10 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     
     # make matrix:
     Nodes <- as.character(unique(sub$Response))
+    if (!missing(order)){
+      if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
+      Nodes <- Nodes[match(order,Nodes)]
+    }
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
     for (i in seq_along(Nodes)){

@@ -143,7 +143,7 @@ mlVAR <- function(
   }
   
   for (j in seq_along(vars)){
-    whichAuto <- grepl(paste0("^L1_",vars[j]), AllLagVars)
+    whichAuto <- grepl(paste0("^L1_",vars[j],"$"), AllLagVars)
     
     if (stepwise){
       NodeWise_Results[[j]] <- Stepwise(
