@@ -16,9 +16,14 @@ mlVAR <- function(
   stepwise = FALSE, # If TRUE. Each nodewise model will be estimated in step up fashion; start with main effects and auto-regressions, then add lagged regressions one at a time to optimize BIC.
   critFun = BIC,
   maxEffects = 6,
-  maxTimeDiff # If not missing. maximum time difference.
+  maxTimeDiff, # If not missing. maximum time difference.
+  standardize = c("inSubject","none","general"),
+  estimator = c("lmer","lmmlasso"),
+  lambda = 0,
+  pdMat = c("pdIdent", "pdDiag","pdSym")
 )
 {
+  estimator <- match.arg(estimator)
   laginteractions <- match.arg(laginteractions)
   
   # Check input:
@@ -61,6 +66,14 @@ mlVAR <- function(
   
   # Remove NA period, day or beeps:
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[periodvar]])  &  !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
+  
+  standardize <- match.arg(standardize)
+  Scale <- function(x) if(sd(x, na.rm=T)==0) return(0) else return(scale(x)) 
+  if (standardize =="inSubject"){
+    for(i in unique(data[[idvar]])) data[data[[idvar]]==i,names(data)%in%vars] <- sapply(data[data[[idvar]]==i,names(data)%in%vars],Scale) 
+  } else if (standardize == "general"){
+    data <- sapply(data,Scale)
+  }
   
   # Create augmented lagged data:
   augData <- plyr::ddply(data, c(idvar,dayvar,periodvar), function(x){
@@ -141,7 +154,7 @@ mlVAR <- function(
   if (progress){
     pb <- txtProgressBar(min=0,max=length(vars),style=3)    
   }
-  
+
   for (j in seq_along(vars)){
     whichAuto <- grepl(paste0("^L1_",vars[j],"$"), AllLagVars)
     
@@ -159,7 +172,9 @@ mlVAR <- function(
         timevar = timevar,
         critFun=critFun,
         maxEffects=maxEffects,
-        progress=progress
+        progress=progress,
+        estimator = estimator,
+        lambda = lambda
       )
     } else {
       NodeWise_Results[[j]] <- NodeWise(
@@ -172,7 +187,9 @@ mlVAR <- function(
         treatmentvar = treatmentvar, # character vector indicating treatment
         covariates = covariates, # character indicating covariates independent of measurement.
         control = control, # "bobyqa"  or "Nelder_Mead"
-        timevar = timevar
+        timevar = timevar,
+        estimator = estimator,
+        lambda = lambda
       )
     }
 
@@ -244,6 +261,25 @@ mlVAR <- function(
 #     close(pb)    
 #   }
 #   
+  
+  if (estimator=="lmmlasso"){
+    out <- list(
+      fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Coef")))
+      # se.fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","se.Coef"))),
+      # randomEffects =  ranPerID,
+      # randomEffectsVariance = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Variance"))),
+      # pvals = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","pvals"))),
+      # pseudologlik = logLik,
+      # df = df,
+      # BIC = BIC,
+      # input = input,
+      # lmerResults = lapply(NodeWise_Results,"[[","lmerResult"),
+      # lmerFormulas = lapply(NodeWise_Results,"[[","formula")
+      )
+    
+    class(out) <- "mlVAR"
+    return(out)
+  }
 
   # Extract info:
   if (!missing(windowSize)){

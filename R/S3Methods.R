@@ -33,6 +33,7 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
 
   # Nodes <- rownames(x$fixedEffects)
   if (type[[1]]=="fixed"){
+
     fixef <- fixedEffects(x)
     
     # Extract only lagged variables:

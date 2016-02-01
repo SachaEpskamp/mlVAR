@@ -11,15 +11,24 @@ fixedEffects <- function(object,digits=5){
   if (is(object,"mlVAR_MW")){
     return(object$fixedEffects)
   }
-  
+
   # Nodes:
   Nodes <- unique(object$fixedEffects$dep)
   # Predictors:
   Predictor = names(object$fixedEffects)[-1]
   
   coef <- as.matrix(object$fixedEffects[,-1])
-  s.coef <- as.matrix(object$se.fixedEffects[,-1])
-  pvals <- as.matrix(object$pvals[,-1])
+  if (!is.null(object$se.fixedEffects)){
+    s.coef <- as.matrix(object$se.fixedEffects[,-1])
+  } else {
+    s.coef <- NA
+  }
+  if (!is.null(object$pval)){
+    pvals <- as.matrix(object$pvals[,-1])
+  } else {
+    pvals <- NA
+  }
+
 
   # Data frame of fixed effects:
   df <- data.frame(
