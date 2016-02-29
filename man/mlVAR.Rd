@@ -73,60 +73,46 @@ Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and
 \code{\link{fixedEffects}}, \code{\link{fixedEffects}}
 }
 \examples{
+# Small network:
+nVar <- 3
+nPerson <- 25
+nTime <- 25
+
+# Simulate model and data:
+Model <- mlVARsim(nPerson,nVar,nTime)
+
+# Run mlVAR:
+Res <- mlVAR(Model)
+
+layout(t(1:2))
+plot(Model,"fixed", title = "True model",layout="circle")
+plot(Res,"fixed", title = "Estimated model", layout = "circle")
+
 \dontrun{
-# True L1 structure:
-L1 <- matrix(c(
-  0.5,0.25,0,
-  0,0.5,0.25,
-  0,0,0.5),3,3,byrow=TRUE)
 
-# True L2 structure:
-L2 <- matrix(c(
-  0.1,0,-0.2,
-  0,0.1,0,
-  0,0,0.1),3,3,byrow=TRUE)
+### Large network:
+nVar <- 10
+nPerson <- 50
+nTime <- 50
 
-# Error variance:
-error <- 0.1
+# Simulate model and data:
+Model <- mlVARsim(nPerson,nVar,nTime)
 
-# Number of subjects:
-Np <- 10
+# Run orthogonal mlVAR:
+Res <- mlVAR(Model, orthogonal = TRUE)
 
-# Number of measurements per subject:
-Nt <- 30
+layout(t(1:2))
+plot(Model,"fixed", title = "True model",layout="circle")
+plot(Res,"fixed", title = "Estimated model", layout = "circle")
+cor(c(getNet(Model)), c(getNet(Res)))
 
-# Generate random effects:
-L1_RF <- lapply(1:Np, function(x) L1 + rnorm(prod(dim(L1)),0,error))
-L2_RF <- lapply(1:Np, function(x) L2 + rnorm(prod(dim(L1)),0,error))
+# Run moving window mlVAR:
+Res <- mlVAR(Model, method = "movingWindow")
 
-# Generate data:
-Data <- do.call(rbind,lapply(1:Np, function(p) {
-  subjectData <- simulateVAR(list(L1_RF[[p]], L2_RF[[p]]), 1:2, 100)
-  names(subjectData) <- paste0("x",1:3)
-  subjectData$ID <- p
-  subjectData
-  }))
-
-# Run analysis:
-Res <- mlVAR(Data, paste0('x',1:3), "ID", lags = c(1, 2))
-
-  library("qgraph")
-  
-  # Plot true fixed VAR network vs estimated fixed VAR network:
-  # Lag-1
-  layout(t(1:2))
-  qgraph(t(L1), labels = paste0('x',1:3), layout = "circle", title = "True Lag-1", diag = TRUE,
-         mar = c(8,8,8,8))
-  plot(Res, "fixed", lag=1, labels = paste0('x',1:3), layout = "circle", title = "Estimated Lag-1",
-       mar = c(8,8,8,8))
-  
-  # Lag-2
-  layout(t(1:2))
-  qgraph(t(L2), labels = paste0('x',1:3), layout = "circle", title = "True Lag-2", diag = TRUE,
-         mar = c(8,8,8,8))
-  plot(Res, "fixed", lag=2, labels = paste0('x',1:3), layout = "circle", title = "Estimated Lag-2",
-       mar = c(8,8,8,8))
-}
+layout(t(1:2))
+plot(Model,"fixed", title = "True model",layout="circle")
+plot(Res,"fixed", title = "Estimated model", layout = "circle")
+cor(c(getNet(Model)), c(getNet(Res)))
 
 
 }

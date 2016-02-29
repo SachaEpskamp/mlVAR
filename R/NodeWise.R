@@ -1,65 +1,3 @@
-# Two wrappers:
-# Stepwise and MovingWindow
-Stepwise <- function(
-  autoLaggedVars,
-  laggedVars,
-  critFun = BIC,
-  maxEffects = 6,
-  progress=FALSE,
-  ... # Args sent to NodeWise
-){
-  curModel <- character(0)
-  
-  # Start with model with only auto-regressions:
-  CurResult <- NodeWise(
-    autoLaggedVars = autoLaggedVars,
-    laggedVars =   curModel,
-    ...
-  )
-
-  curCrit <- critFun(CurResult$lmerResult)
-  propModels <- list()
-  propResults <- list()
-  propCrits <- numeric(0)
-  
-  repeat{
-    if (progress){
-      message(paste("Current model: ",deparse(paste(CurResult$formula,collapse = ""))))
-    }
-    for (i in seq_along(laggedVars)){ 
-      
-      if (!laggedVars[i] %in% curModel){
-        propModels[[i]] <- c(curModel,laggedVars[i])
-      } else {
-        propModels[[i]] <- curModel[curModel != laggedVars[i]]
-      }
-
-      if (length(propModels[[i]])>maxEffects){
-        propResults[[i]] <- list()
-        propCrits[i] <- Inf
-      } else {
-        propResults[[i]] <- NodeWise(
-          autoLaggedVars = autoLaggedVars,
-          laggedVars =   propModels[[i]],
-          ...
-        )
-        propCrits[i] <- critFun( propResults[[i]]$lmerResult)        
-      }
-
-    }
-    if (!any(propCrits < curCrit)){
-      break
-    } else {
-      best <- which.min(propCrits)
-      curModel <- propModels[[i]]
-      CurResult <- propResults[[best]]
-      curCrit <- propCrits[[best]]
-    }
-  }
-  
-  return(CurResult)
-}
-
 
 
 # Inner function for nodewise estimation:
@@ -78,11 +16,11 @@ NodeWise <- function(
   estimator = c("lmer","lmmlasso"),
   lambda = 0,
   timevar,
-  pdMat= c("pdIdent", "pdDiag","pdSym")
+  orthogonal = FALSE
 ){
   includeType <- match.arg(includeType)
   estimator <- match.arg(estimator)
-  pdMat <- match.arg(pdMat)
+  # pdMat <- match.arg(pdMat)
 
   # If include is missing, include all laggedVars:
   if (missing(include)){
@@ -135,12 +73,12 @@ NodeWise <- function(
     # Create model:
     Rands <- c(autoLaggedVars,laggedVars[include]) 
     Pred <- paste0(Pred," + (",paste(Rands,collapse="+")," |",idvar,")")
+    Pred <- gsub("\\|","||",Pred)
     ff <- as.formula(paste(response,"~",Pred))
     
     # RUN LMER:
-    Results <- lme4::lmer(ff,data=aData, control = do.call('lmerControl',control),REML=FALSE)
+    Results <- suppressWarnings(lme4::lmer(ff,data=aData, control = do.call('lmerControl',control),REML=FALSE))
     formula <- ff
-    
     
     # Extract fixed effects:
     feCur <- fixef(Results)
@@ -184,6 +122,11 @@ NodeWise <- function(
     ))
     
   } else if (estimator == "lmmlasso"){
+    if (orthogonal){
+      pdMat <- "pdDiag"
+    } else {
+      pdMat <- "pdSym"
+    }
     # Removing missing values:
     aData <- aData[rowSums(is.na(aData))==0,]
 

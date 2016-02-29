@@ -8,23 +8,42 @@ mlVAR <- function(
   periodvar, # string indicating the period of measurement.
   treatmentvar, # character vector indicating treatment
   covariates, # character indicating covariates independent of measurement.
-  control = list(optimizer = "bobyqa"), # "bobyqa"  or "Nelder_Mead"
-  windowSize, # Assign to use moving window estimation. If missing, does not use moving window estimation
-  progress = TRUE, # Include progress bar?
   timevar,
-  laginteractions = c("none","mains","interactions"), # Include interactions with lag?
-  stepwise = FALSE, # If TRUE. Each nodewise model will be estimated in step up fashion; start with main effects and auto-regressions, then add lagged regressions one at a time to optimize BIC.
-  critFun = BIC,
-  maxEffects = 6,
   maxTimeDiff, # If not missing. maximum time difference.
-  standardize = c("inSubject","none","general"),
+  control = list(optimizer = "bobyqa"), # "bobyqa"  or "Nelder_Mead"
+  # windowSize, # Assign to use moving window estimation. If missing, does not use moving window estimation
+  verbose = TRUE, # Include progress bar?
+  # standardize = c("inSubject","none","general"),
+  orthogonal, # by default set to TRUE when nvar > 6 and FALSE otherwise
   estimator = c("lmer","lmmlasso"),
-  lambda = 0,
-  pdMat = c("pdIdent", "pdDiag","pdSym")
+  method = c("default","stepwise","movingWindow"),
+  laginteractions = c("none","mains","interactions"), # Include interactions with lag?
+  critFun = BIC,
+  lambda = 0
 )
 {
+
+  
+  # standardize = c("inSubject","none","general")
+  standardize <- "inSubject"
+  
+  if (is(data,"mlVARsim")){
+    
+    vars <- data$vars
+    idvar <- data$idvar
+    data <- data$Data
+  }
+  
+
+  
+  method <- match.arg(method)
   estimator <- match.arg(estimator)
   laginteractions <- match.arg(laginteractions)
+  
+  if (verbose & length(vars) > 6 & missing(orthogonal) & method != "movingWindow"){
+    message("More than 6 nodes and method != 'movingWindow', correlations between random effects are set to zero (orthogonal = TRUE)")
+    orthogonal <- TRUE
+  }
   
   # Check input:
   stopifnot(!missing(vars))
@@ -67,7 +86,7 @@ mlVAR <- function(
   # Remove NA period, day or beeps:
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[periodvar]])  &  !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
   
-  standardize <- match.arg(standardize)
+  # standardize <- match.arg(standardize)
   Scale <- function(x) if(sd(x, na.rm=T)==0) return(0) else return(scale(x)) 
   if (standardize =="inSubject"){
     for(i in unique(data[[idvar]])) data[data[[idvar]]==i,names(data)%in%vars] <- sapply(data[data[[idvar]]==i,names(data)%in%vars],Scale) 
@@ -126,7 +145,7 @@ mlVAR <- function(
     
   }
   if (laginteractions != "none"){
-
+    
     
     AllLagVars <- c(AllLagVars,"LAGDIFF")
     
@@ -151,14 +170,14 @@ mlVAR <- function(
   FixEf_SE <- list()
   
   # Run models:
-  if (progress){
+  if (verbose){
     pb <- txtProgressBar(min=0,max=length(vars),style=3)    
   }
-
+  
   for (j in seq_along(vars)){
     whichAuto <- grepl(paste0("^L1_",vars[j],"$"), AllLagVars)
     
-    if (stepwise){
+    if (method == "stepwise"){
       NodeWise_Results[[j]] <- Stepwise(
         aData = augData,
         response = vars[j],
@@ -171,12 +190,12 @@ mlVAR <- function(
         control = control, # "bobyqa"  or "Nelder_Mead"
         timevar = timevar,
         critFun=critFun,
-        maxEffects=maxEffects,
-        progress=progress,
+        progress=verbose,
         estimator = estimator,
-        lambda = lambda
+        lambda = lambda,
+        orthogonal = orthogonal
       )
-    } else {
+    } else if (method == "default") {
       NodeWise_Results[[j]] <- NodeWise(
         aData = augData,
         response = vars[j],
@@ -189,78 +208,98 @@ mlVAR <- function(
         control = control, # "bobyqa"  or "Nelder_Mead"
         timevar = timevar,
         estimator = estimator,
-        lambda = lambda
+        lambda = lambda,
+        orthogonal = orthogonal
       )
-    }
-
+    } else if (method=="movingWindow") {
+      NodeWise_Results[[j]] <- movingWindow(
+        aData = augData,
+        response = vars[j],
+        idvar = idvar, # String indicating the subject id variable name 
+        autoLaggedVars = AllLagVars[whichAuto],
+        laggedVars = AllLagVars[!whichAuto], # Vector indicating the lags to include
+        periodvar = periodvar, # string indicating the period of measurement.
+        treatmentvar = treatmentvar, # character vector indicating treatment
+        covariates = covariates, # character indicating covariates independent of measurement.
+        control = control, # "bobyqa"  or "Nelder_Mead"
+        timevar = timevar,
+        estimator = estimator,
+        lambda = lambda,
+        orthogonal = orthogonal
+      )
+      
+    } else stop("Method not implemented")
     
-    if (progress){
+    
+    
+    
+    if (verbose){
       setTxtProgressBar(pb, j)
     }
   }
   
-  if (progress){
+  if (verbose){
     close(pb)    
   }
   
-
+  
   
   # Fixed effects for each lag:
-
   
   
-#   ### MOVE TO MOVING WINDOW FUNCTION ####
-#   
-#   # Construct the window matrix:
-#   Neffect <- length(AllLagVars) - 1
-#   
-#   
-#   if (!missing(windowSize)){
-#     # Number of possible effects to include is amount of lagged - 1 (autocor is always included):
-#     
-#     
-#     # Window matrix is Neffect * windowSize
-#     # Randomize:
-#     if (Neffect>2) Rand <- sample(seq_len(Neffect)) else Rand <- 1
-#     WindowMatrix <- matrix(Rand[(0:(windowSize-1) + rep(0:(Neffect-1),each=windowSize)) %% Neffect + 1],
-#                            Neffect, windowSize, byrow=TRUE)
-#     
-#   } else WindowMatrix <- matrix(1:Neffect,1)
-#   
-#   cur <- 1
-#   for (j in seq_along(vars)){
-#     
-#     for (w in seq_len(nrow(WindowMatrix))){
-#       PredCur <- Pred
-#       
-#       # Always include the autoregression
-#       whichAuto <- grep(paste0("^L1_",vars[j]), AllLagVars)
-#       RandsCur <- c(AllLagVars[whichAuto],AllLagVars[-j][WindowMatrix[w,]]) 
-#       PredCur <- paste0(PredCur," + (",paste(RandsCur,collapse="+")," |",idvar,")")
-#       
-#       ff <- as.formula(paste(vars[j],"~",PredCur))
-#       Results[[cur]] <- lme4::lmer(ff,data=augData, control = do.call('lmerControl',control),REML=FALSE)
-#       formulas[[cur]] <- ff
-#       
-#       # Extract fixed effects:
-#       feCur <- fixef(Results[[cur]])
-#       FixEf[[cur]] <- feCur[names(feCur) %in% c("(Intercept)",RandsCur)]
-#       
-#       feSECur <- se.fixef(Results[[cur]])
-#       FixEf_SE[[cur]] <- feSECur[names(feSECur) %in% c("(Intercept)",RandsCur)]
-#       
-#       cur <- cur + 1
-#     }
-#     
-#     if (progress){
-#       setTxtProgressBar(pb, j)
-#     }
-#   }
-#   
-#   if (progress){
-#     close(pb)    
-#   }
-#   
+  
+  #   ### MOVE TO MOVING WINDOW FUNCTION ####
+  #   
+  #   # Construct the window matrix:
+  #   Neffect <- length(AllLagVars) - 1
+  #   
+  #   
+  #   if (!missing(windowSize)){
+  #     # Number of possible effects to include is amount of lagged - 1 (autocor is always included):
+  #     
+  #     
+  #     # Window matrix is Neffect * windowSize
+  #     # Randomize:
+  #     if (Neffect>2) Rand <- sample(seq_len(Neffect)) else Rand <- 1
+  #     WindowMatrix <- matrix(Rand[(0:(windowSize-1) + rep(0:(Neffect-1),each=windowSize)) %% Neffect + 1],
+  #                            Neffect, windowSize, byrow=TRUE)
+  #     
+  #   } else WindowMatrix <- matrix(1:Neffect,1)
+  #   
+  #   cur <- 1
+  #   for (j in seq_along(vars)){
+  #     
+  #     for (w in seq_len(nrow(WindowMatrix))){
+  #       PredCur <- Pred
+  #       
+  #       # Always include the autoregression
+  #       whichAuto <- grep(paste0("^L1_",vars[j]), AllLagVars)
+  #       RandsCur <- c(AllLagVars[whichAuto],AllLagVars[-j][WindowMatrix[w,]]) 
+  #       PredCur <- paste0(PredCur," + (",paste(RandsCur,collapse="+")," |",idvar,")")
+  #       
+  #       ff <- as.formula(paste(vars[j],"~",PredCur))
+  #       Results[[cur]] <- lme4::lmer(ff,data=augData, control = do.call('lmerControl',control),REML=FALSE)
+  #       formulas[[cur]] <- ff
+  #       
+  #       # Extract fixed effects:
+  #       feCur <- fixef(Results[[cur]])
+  #       FixEf[[cur]] <- feCur[names(feCur) %in% c("(Intercept)",RandsCur)]
+  #       
+  #       feSECur <- se.fixef(Results[[cur]])
+  #       FixEf_SE[[cur]] <- feSECur[names(feSECur) %in% c("(Intercept)",RandsCur)]
+  #       
+  #       cur <- cur + 1
+  #     }
+  #     
+  #     if (progress){
+  #       setTxtProgressBar(pb, j)
+  #     }
+  #   }
+  #   
+  #   if (progress){
+  #     close(pb)    
+  #   }
+  #   
   
   if (estimator=="lmmlasso"){
     out <- list(
@@ -275,27 +314,27 @@ mlVAR <- function(
       # input = input,
       # lmerResults = lapply(NodeWise_Results,"[[","lmerResult"),
       # lmerFormulas = lapply(NodeWise_Results,"[[","formula")
-      )
+    )
     
     class(out) <- "mlVAR"
     return(out)
   }
-
+  
   # Extract info:
-  if (!missing(windowSize)){
-    logLik <- NA
-    df <- NA
-    BIC <- NA
-  } else {
-    logLik <- sum(unlist(lapply(lapply(NodeWise_Results,"[[","lmerResult"),logLik)))
-    df <- sum(unlist(lapply(lapply(lapply(NodeWise_Results,"[[","lmerResult"),logLik),attr,'df')))
-    BIC <- sum(unlist(lapply(lapply(NodeWise_Results,"[[","lmerResult"),BIC)))    
+    if (method == "movingWindow"){
+      logLik <- NA
+      df <- NA
+      BIC <- NA
+    } else {
+  logLik <- sum(unlist(lapply(lapply(NodeWise_Results,"[[","Result"),logLik)))
+  df <- sum(unlist(lapply(lapply(lapply(NodeWise_Results,"[[","Result"),logLik),attr,'df')))
+  BIC <- sum(unlist(lapply(lapply(NodeWise_Results,"[[","Result"),BIC)))    
   }
   
-
+  
   ranlist <- lapply(NodeWise_Results,"[[","ranPerID")
   ranPerID <- lapply(lapply(seq_along(ranlist[[1]]),function(i)lapply(ranlist,function(x)as.data.frame(x[[i]]))),function(xx)as.data.frame(rbind_all(xx)))
- 
+  
   # Output:
   out <- list(
     fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Coef"))),

@@ -4,7 +4,7 @@ Title: Multi-Level Vector Autoregression
 Version: 0.1.0
 Date: 2015-05-31
 Depends: R (>= 3.0.0)
-Imports: plyr, lme4,  arm, qgraph, dplyr
+Imports: plyr, lme4,  arm, qgraph, dplyr, clusterGeneration, mvtnorm
 Author: Sacha Epskamp, Marie K. Deserno and Laura F. Bringmann
 Maintainer: Sacha Epskamp <mail@sachaepskamp.com>
 Description: Compute estimates of the multivariate vector autoregression model as 

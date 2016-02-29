@@ -37,7 +37,8 @@ fixedEffects <- function(object,digits=5){
     effect = round(c(coef),digits),
     se = round(c(s.coef),digits),
     p = round(c(pvals),digits),
-    sig = asterix(c(pvals))
+    sig = asterix(c(pvals)),
+    stringsAsFactors=FALSE
   )
   
   if (any(duplicated(df[c("Response","Predictor")]))){

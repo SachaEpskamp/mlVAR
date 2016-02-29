@@ -25,8 +25,23 @@
 #   invisible(Graph)
 # }
 
+### 
+tab2net <- function(x,lag=1){
+  Nodes <- x$dep
+  x <- x[,grepl(paste0("^L",lag,"_"), names(x))]
+  x[is.na(x)] <- 0
+  x <- t(x)
+  colnames(x) <- rownames(x) <- Nodes
+  x
+}
 
-plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,order,...){
+
+#### These functions probably should be the other way around... but this works...
+getNet <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,order){
+  qgraph:::getWmat(plot(x,type=type,lag=lag,subject=subject,order=order,DoNotPlot=TRUE))
+}
+
+plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
   if (type[[1]]=="subject" & missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
@@ -35,12 +50,14 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
   if (type[[1]]=="fixed"){
 
     fixef <- fixedEffects(x)
-    
+    Nodes <- as.character(unique(fixef$Response))
+
     # Extract only lagged variables:
     sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
     
     # make matrix:
-    Nodes <- as.character(unique(sub$Response))
+
+
     if (!missing(order)){
       if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
       Nodes <- Nodes[match(order,Nodes)]
@@ -56,12 +73,13 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     Graph <- qgraph(Network, labels=Nodes, ...)
   } else if (type[[1]]=="se"){
     fixef <- fixedEffects(x)
+    Nodes <- as.character(unique(fixef$Response))
     
     # Extract only lagged variables:
     sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
     
     # make matrix:
-    Nodes <- as.character(unique(sub$Response))
+
     if (!missing(order)){
       if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
       Nodes <- Nodes[match(order,Nodes)]
@@ -76,29 +94,28 @@ plot.mlVAR <- function(x, type = c("fixed","se","random","subject"), lag = 1,sub
     
     Graph <- qgraph(Network, labels=Nodes, ...)
     
-  } else if (type[[1]]=="random"){
+  } else if (type[[1]]=="SD"){
     
     ranef <- randomEffects(x)
+    Nodes <- as.character(unique(ranef$Response))
     
     # Extract only lagged variables:
     sub <- ranef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
     
     # make matrix:
-    Nodes <- as.character(unique(sub$Response))
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
+
     for (i in seq_along(Nodes)){
-      Network[,i] <- sub$variance[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+    Network[ match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes),i] <- sub$variance[sub$Response==Nodes[i]]
     }
     
-    Graph <- qgraph(Network, labels=Nodes, ...)
+    Graph <- qgraph(sqrt(Network), labels=Nodes, ...)
     
   }  else if (type[[1]]=="subject"){
-      
-      stop("Currently not supported")    
-#     Net <- x$randomEffects[[subject]][,grepl(paste0("^L",lag,"_(",paste(Nodes,collapse="|"),")$"),colnames(x$randomEffects[[subject]]))]
-#     Graph <- qgraph(t(Net), labels=rownames(Net), ...)
-#     
+    Net <- tab2net(x$randomEffects[[subject]])
+    Graph <- qgraph(Net, labels=rownames(Net), ...)
+     
   } else stop("'type' is not supported")
   
   invisible(Graph)
@@ -119,3 +136,43 @@ summary.mlVAR <- function(object,...){
 }
 
 print.mlVAR <- function(x,...) summary.mlVAR(x,...)
+
+
+### Model plot method:
+
+plot.mlVARsim <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
+  if (type[[1]]=="subject" & missing(subject)){
+    stop("'subject' is needed to plot individual network")
+  }
+  
+  # Nodes <- rownames(x$fixedEffects)
+  if (type[[1]]=="fixed"){
+
+
+    fixef <- x$fixedEffects
+    Nodes <- x$vars
+    
+    Graph <- qgraph(t(fixef), labels=Nodes, ...)
+    
+  } else if (type[[1]]=="se"){
+    
+    stop("No standard errors in true model")
+
+    
+  } else if (type[[1]]=="SD"){
+    
+    ranef <- x$randomEffectsSD
+    Nodes <- x$vars
+
+    Graph <- qgraph(t(ranef), labels=Nodes, ...)
+    
+  }  else if (type[[1]]=="subject"){
+    fixef <- x$fixedEffects
+    Nodes <- x$vars
+    Net <- fixef + x$randomEffects[[subject]]
+    Graph <- qgraph(t(Net), labels=Nodes, ...)
+    
+  } else stop("'type' is not supported")
+  
+  invisible(Graph)
+}
