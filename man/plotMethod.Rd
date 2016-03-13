@@ -1,5 +1,6 @@
 \name{plot.mlVAR}
 \alias{plot.mlVAR}
+\alias{plot.mlVARsim}
 
 \title{
   Plot Method for mlVAR
@@ -8,7 +9,10 @@
   The function \code{plot.mlVAR} plots estimated model coefficients as a network using \code{qgraph}.
 }
 \usage{
-  \method{plot}{mlVAR}(x, type = c("fixed","se","random","subject"), lag = 1,subject,...)
+  \method{plot}{mlVAR}(x, type = c("fixed", "SD", "subject"), lag = 1,
+                 subject, order, onlySig = FALSE, alpha, ...)
+  \method{plot}{mlVARsim}(x, type = c("fixed", "SD", "subject"), lag = 1,
+                 subject, order,  ...)
 }
 
 \arguments{
@@ -16,7 +20,7 @@
     A \code{mlVAR} object obtained through the \code{\link{mlVAR}}-function
   }
   \item{type}{
-  Indicates whether to plot a network of fixed effects coefficients ("fixed"), the standard deviations of the fixed effects ("se"), the variances of the random effect terms ("random") or an individual subject's random effects network ("subject").
+  Indicates whether to plot a network of fixed effects coefficients ("fixed"), the standard deviations of the random effect terms ("SD") or an individual subject's random effects network ("subject").
   }
   \item{lag}{
   Vector indicating the lags to include
@@ -24,6 +28,15 @@
   \item{subject}{
   If type="subject", vector indicating the ID subject number
   
+  }
+    \item{order}{
+    Order of nodes
+  }
+    \item{onlySig}{
+    Logical. Set to \code{TRUE} to only plot significant fixed effects.
+  }
+      \item{alpha}{
+    Significance level to test edges at if \code{onlySig == TRUE}. Defaults to Bonferonni corrected alpha level of 0.05 divided by the number of fixed effects.
   }
   \item{\dots}{
     Arguments sent to \code{\link[qgraph]{qgraph}}

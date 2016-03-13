@@ -56,7 +56,7 @@ fixedEffects <- function(object,digits=5){
 # Random effects:
 randomEffects<- function(object, digits=5){
   if (is(object,"mlVAR_MW")) stop("Cannot estimate random effects with moving window approach")
-  
+
   # Predictors:
   Predictor = colnames(object$randomEffectsVariance)[-1]
   

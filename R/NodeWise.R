@@ -73,7 +73,9 @@ NodeWise <- function(
     # Create model:
     Rands <- c(autoLaggedVars,laggedVars[include]) 
     Pred <- paste0(Pred," + (",paste(Rands,collapse="+")," |",idvar,")")
-    Pred <- gsub("\\|","||",Pred)
+    if (orthogonal){
+      Pred <- gsub("\\|","||",Pred)      
+    }
     ff <- as.formula(paste(response,"~",Pred))
     
     # RUN LMER:
@@ -102,9 +104,16 @@ NodeWise <- function(
       ranPerID[[i]] <- ranEffects[[idvar]][i,,drop=FALSE]
       ranPerID[[i]] <- cbind(dep = response,ranPerID[[i]],stringsAsFactors=FALSE)
     }
-    
+
     # Variance of random effects:
-    Variance <- as.data.frame(t(diag(lme4::VarCorr(Results)[[idvar]])))
+    if(orthogonal){
+      ranEf <- as.data.frame(lme4::VarCorr(Results))
+      Variance <- as.data.frame(t(ranEf$vcov[grepl(idvar,ranEf$grp)]))      
+      names(Variance) <- ranEf$var1[grepl(idvar,ranEf$grp)]
+    } else {
+      Variance <- as.data.frame(t(diag(lme4::VarCorr(Results)[[idvar]])))
+    }
+
     Variance <- cbind(dep =  response, Variance,stringsAsFactors=FALSE)
     
     

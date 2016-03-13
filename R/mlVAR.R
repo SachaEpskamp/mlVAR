@@ -40,10 +40,17 @@ mlVAR <- function(
   estimator <- match.arg(estimator)
   laginteractions <- match.arg(laginteractions)
   
-  if (verbose & length(vars) > 6 & missing(orthogonal) & method != "movingWindow"){
-    message("More than 6 nodes and method != 'movingWindow', correlations between random effects are set to zero (orthogonal = TRUE)")
-    orthogonal <- TRUE
+  if (missing(orthogonal)){
+    if (length(vars) > 6 & method != "movingWindow"){
+      
+      if (verbose) message("More than 6 nodes and method != 'movingWindow', correlations between random effects are set to zero (orthogonal = TRUE)")
+      orthogonal <- TRUE
+      
+    } else {
+      orthogonal <- FALSE
+    }    
   }
+
   
   # Check input:
   stopifnot(!missing(vars))
@@ -334,7 +341,7 @@ mlVAR <- function(
   
   ranlist <- lapply(NodeWise_Results,"[[","ranPerID")
   ranPerID <- lapply(lapply(seq_along(ranlist[[1]]),function(i)lapply(ranlist,function(x)as.data.frame(x[[i]]))),function(xx)as.data.frame(rbind_all(xx)))
-  
+
   # Output:
   out <- list(
     fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Coef"))),

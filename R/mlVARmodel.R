@@ -56,7 +56,9 @@ mlVARsim <- function(
       return(Beta)
     })
     Betas <- lapply(RandomEffects,function(x){
-      xx <- x + Pars$fixed[Pars$included]
+
+      xx <- x + Pars$fixed
+      xx[!Pars$included] <- 0
       return(xx)
     })
     

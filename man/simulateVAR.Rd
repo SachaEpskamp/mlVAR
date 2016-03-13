@@ -8,7 +8,8 @@ Simulate data from VAR model
 Simulates a timeseries using VAR parameters
 }
 \usage{
-simulateVAR(pars, lags = 1, Nt, init, errorSD = 0.1)
+simulateVAR(pars, lags = 1, Nt, init, init, residuals = 0.1,
+                 burnin = min(round(Nt/2), 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,8 +25,11 @@ Number of time points
   \item{init}{
 Initial setup. Must be a matrix of the first lags with rows corresponding to time points and columns corresponding to variables (e.g., if only two lags are used then the matrix must have two rows indicating the first two times points.)
 }
-  \item{errorSD}{
-Standard deviation of the error
+  \item{residuals}{
+Standard deviation of the residuals or a residual covariance matrix
+}
+  \item{burnin}{
+Initial simulations not returned
 }
 }
 \author{

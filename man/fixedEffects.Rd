@@ -9,14 +9,17 @@ Fixed and random effects
 These functions return a table of the fixed and random effects
 }
 \usage{
-fixedEffects(object)
-randomEffects(object)
+fixedEffects(object, digits = 5)
+randomEffects(object, digits = 5)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{object}{
 A \code{mlVAR} object
 }
+ \item{digits}{
+    Number of digits to output
+ }
 }
 
 

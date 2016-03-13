@@ -37,11 +37,15 @@ tab2net <- function(x,lag=1){
 
 
 #### These functions probably should be the other way around... but this works...
-getNet <- function(x, type = c("fixed","se","random","subject"), lag = 1,subject,order){
-  qgraph:::getWmat(plot(x,type=type,lag=lag,subject=subject,order=order,DoNotPlot=TRUE))
+getNet <- function(x, ...){
+  qgraph:::getWmat(plot(x,...,DoNotPlot=TRUE))
 }
 
-plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
+plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,onlySig = FALSE,
+                alpha, # alpha value. if missing, do bonferonni on 0.05.
+                ...){
+  type <- match.arg(type)
+  
   if (type[[1]]=="subject" & missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
@@ -56,7 +60,13 @@ plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,orde
     sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
     
     # make matrix:
-
+    ### Simple trick to remove nonsigs, edit fixed effects to be 0 if not sig:
+    if (onlySig){
+      if (missing(alpha)){
+        alpha <- 0.05 / nrow(sub)
+      }
+      sub <- sub %>% ungroup %>% mutate(effect = ifelse(p < alpha, effect, 0))
+    }
 
     if (!missing(order)){
       if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
@@ -71,37 +81,39 @@ plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,orde
     }
     
     Graph <- qgraph(Network, labels=Nodes, ...)
-  } else if (type[[1]]=="se"){
-    fixef <- fixedEffects(x)
-    Nodes <- as.character(unique(fixef$Response))
-    
-    # Extract only lagged variables:
-    sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
-    
-    # make matrix:
-
-    if (!missing(order)){
-      if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
-      Nodes <- Nodes[match(order,Nodes)]
-    }
-    nNode <- length(Nodes)
-    Network <- matrix(0, nNode, nNode)
-    for (i in seq_along(Nodes)){
-      # Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
-      Network[ match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes),i] <- sub$se[sub$Response==Nodes[i]]
-    }
-
-    
-    Graph <- qgraph(Network, labels=Nodes, ...)
-    
+#   } else if (type[[1]]=="se"){
+#     fixef <- fixedEffects(x)
+#     Nodes <- as.character(unique(fixef$Response))
+#     
+#     # Extract only lagged variables:
+#     sub <- fixef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
+#     
+#     # make matrix:
+# 
+#     if (!missing(order)){
+#       if (!all(sort(Nodes)==sort(order)))stop("'order' must contain exact node labels")
+#       Nodes <- Nodes[match(order,Nodes)]
+#     }
+#     nNode <- length(Nodes)
+#     Network <- matrix(0, nNode, nNode)
+#     for (i in seq_along(Nodes)){
+#       # Network[,i] <- sub$effect[sub$Response==Nodes[i]][match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes)]
+#       Network[ match(gsub("^L\\d+_","",sub$Predictor)[sub$Response==Nodes[i]], Nodes),i] <- sub$se[sub$Response==Nodes[i]]
+#     }
+# 
+#     
+#     Graph <- qgraph(Network, labels=Nodes, ...)
+#     
   } else if (type[[1]]=="SD"){
-    
+  if (onlySig){
+    warning("'onlySig' argument can only be used with type = 'fixed'")
+  }
     ranef <- randomEffects(x)
     Nodes <- as.character(unique(ranef$Response))
     
     # Extract only lagged variables:
     sub <- ranef %>% filter(grepl(paste0("^L",lag,"_"), Predictor))
-    
+
     # make matrix:
     nNode <- length(Nodes)
     Network <- matrix(0, nNode, nNode)
@@ -113,8 +125,13 @@ plot.mlVAR <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,orde
     Graph <- qgraph(sqrt(Network), labels=Nodes, ...)
     
   }  else if (type[[1]]=="subject"){
+    if (onlySig){
+      warning("'onlySig' argument can only be used with type = 'fixed'")
+    }
     Net <- tab2net(x$randomEffects[[subject]])
-    Graph <- qgraph(Net, labels=rownames(Net), ...)
+    fixed <- getNet(x,"fixed",onlySig=FALSE)
+    
+    Graph <- qgraph(fixed+Net, labels=rownames(Net), ...)
      
   } else stop("'type' is not supported")
   
