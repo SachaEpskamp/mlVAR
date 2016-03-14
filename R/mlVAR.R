@@ -19,13 +19,14 @@ mlVAR <- function(
   method = c("default","stepwise","movingWindow"),
   laginteractions = c("none","mains","interactions"), # Include interactions with lag?
   critFun = BIC,
-  lambda = 0
+  lambda = 0,
+  center = c("inSubject","general","none")
 )
 {
 
   
   # standardize = c("inSubject","none","general")
-  standardize <- "inSubject"
+  center <- match.arg(center)
   
   if (is(data,"mlVARsim")){
     
@@ -94,11 +95,11 @@ mlVAR <- function(
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[periodvar]])  &  !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
   
   # standardize <- match.arg(standardize)
-  Scale <- function(x) if(sd(x, na.rm=T)==0) return(0) else return(scale(x)) 
-  if (standardize =="inSubject"){
-    for(i in unique(data[[idvar]])) data[data[[idvar]]==i,names(data)%in%vars] <- sapply(data[data[[idvar]]==i,names(data)%in%vars],Scale) 
-  } else if (standardize == "general"){
-    data <- sapply(data,Scale)
+  Center <- function(x) return(x - mean(x,na.rm=TRUE)) 
+  if (center =="inSubject"){
+    for(i in unique(data[[idvar]])) data[data[[idvar]]==i,names(data)%in%vars] <- sapply(data[data[[idvar]]==i,names(data)%in%vars],Center) 
+  } else if (center == "general"){
+    data <- sapply(data,Center)
   }
   
   # Create augmented lagged data:

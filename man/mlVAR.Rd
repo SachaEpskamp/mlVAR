@@ -14,7 +14,8 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
                  verbose = TRUE, orthogonal, estimator = c("lmer",
                  "lmmlasso"), method = c("default", "stepwise",
                  "movingWindow"), laginteractions = c("none", "mains",
-                 "interactions"), critFun = BIC, lambda = 0)
+                 "interactions"), critFun = BIC, lambda = 0,
+                 center = c("inSubject","general","none"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -84,7 +85,9 @@ Character indicating covariates independent of assessment.
  lmmlasso lambda parameter
 }
 
-
+  \item{center}{
+ Centering to be used. \code{"inSubject"} uses within-person centering, \code{"general"} uses grand-mean centering and \code{"none"} does not use centering. IMPORTANT NOTE: \code{"inSubject"} leads to coefficients to resemble within-person slopes, the other centering option leads to coefficients to be a blend of within and between person slopes.
+}
 }
 \details{
 mlVAR has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. For example, in a lag-1-model each variable at time point t is regressed to a lagged version of itself at time point t-1 and all other variables at time point t-1. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day (as assessed by experience sampling methods) to the dynamics of these symptoms on the consecutive day. }
