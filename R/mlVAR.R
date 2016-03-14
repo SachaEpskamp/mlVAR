@@ -125,7 +125,7 @@ mlVAR <- function(
     # Lag variables:
     for (l in lags)
     {
-      if (l > nrow(x)) stop("Lag is higher than amount of measurements")
+      if (l > nrow(x)) stop("Lag is larger than number of measurements")
       
       lagDF <- x[-(nrow(x)-(1:l)+1),vars]
       lagDF <- lagDF[c(rep(NA,l),seq_len(nrow(lagDF))),]
