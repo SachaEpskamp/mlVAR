@@ -1,23 +1,25 @@
-\name{plot.mlVAR}
-\alias{plot.mlVAR}
-\alias{plot.mlVARsim}
+\name{plot.mlVAR0}
+\alias{plot.mlVAR0}
+\alias{plot.mlVARsim0}
 
 \title{
-  Plot Method for mlVAR
+  Plot Method for mlVAR0
 }
 \description{
-  The function \code{plot.mlVAR} plots estimated model coefficients as a network using \code{qgraph}.
+  The function \code{plot.mlVAR0} plots estimated model coefficients as a network using \code{qgraph}.
+  
+  FUNCTION IS DEPRECATED AND WILL BE REMOVED SOON.
 }
 \usage{
-  \method{plot}{mlVAR}(x, type = c("fixed", "SD", "subject"), lag = 1,
+  \method{plot}{mlVAR0}(x, type = c("fixed", "SD", "subject"), lag = 1,
                  subject, order, onlySig = FALSE, alpha, ...)
-  \method{plot}{mlVARsim}(x, type = c("fixed", "SD", "subject"), lag = 1,
+  \method{plot}{mlVARsim0}(x, type = c("fixed", "SD", "subject"), lag = 1,
                  subject, order,  ...)
 }
 
 \arguments{
   \item{x}{
-    A \code{mlVAR} object obtained through the \code{\link{mlVAR}}-function
+    A \code{mlVAR0} object obtained through the \code{\link{mlVAR0}}-function
   }
   \item{type}{
   Indicates whether to plot a network of fixed effects coefficients ("fixed"), the standard deviations of the random effect terms ("SD") or an individual subject's random effects network ("subject").

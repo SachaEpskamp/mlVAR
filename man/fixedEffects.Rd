@@ -6,7 +6,9 @@
 Fixed and random effects
 }
 \description{
-These functions return a table of the fixed and random effects
+These functions return a table of the fixed and random effects.
+
+FUNCTIONS ARE DEPRECATED AND WILL BE REMOVED SOON.
 }
 \usage{
 fixedEffects(object, digits = 5)

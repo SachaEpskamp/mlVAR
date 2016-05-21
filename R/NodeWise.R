@@ -131,95 +131,96 @@ NodeWise <- function(
     ))
     
   } else if (estimator == "lmmlasso"){
-    if (orthogonal){
-      pdMat <- "pdDiag"
-    } else {
-      pdMat <- "pdSym"
-    }
-    # Removing missing values:
-    aData <- aData[rowSums(is.na(aData))==0,]
-
-    # Random effects matrix:
-    Rand <- cbind(intercept=1,aData[c(autoLaggedVars,laggedVars[include])])
-    
-    # Fixed effects matrix:
-    Pred <- character(0)
-    
-    # Vector of lagged variables for fixed effects:
-    if (includeType == "stepwise"){
-      laggedVars_fixedEffects <- c(autoLaggedVars,laggedVars[include])
-    } else {
-      laggedVars_fixedEffects <-c(autoLaggedVars,laggedVars)
-    }
-    
-    # Add to predictor set:
-    Pred <- c(Pred,laggedVars_fixedEffects)
-    
-    # If period has more than 1 level:
-    if (length(unique(aData[[periodvar]])) > 1)
-    {
-      # Fixed effect for period:
-      Pred <- c(Pred, periodvar)
-      
-      # Add interaction columns:
-      
-      # Interaction lagged vars & period:
-      int <- aData[laggedVars_fixedEffects] * aData[[periodvar]]
-      names(int) <- paste0(names(int),"_x_",periodvar)
-      aData <- cbind(aData,int)
-      Pred <- c(Pred,  names(int))
-      
-      # If not missing, interaction with treatment:
-      if (!missing(treatmentvar))
-      {
-        Pred <- c(Pred, treatmentvar)
-        
-        # Interaction lagged vars & period:
-        int <- aData[treatmentvar] * aData[[periodvar]]
-        names(int) <- paste0(treatmentvar,"_x_",periodvar)
-        aData <- cbind(aData,int)
-        Pred <- c(Pred,  names(int))
-        
-        # 3 way interaction:
-        int <- aData[treatmentvar] * aData[[periodvar]] * aData[[treatmentvar]]
-        names(int) <- paste0(treatmentvar,"_x_",periodvar,"_x_",treatmentvar)
-        aData <- cbind(aData,int)
-        Pred <- c(Pred,  names(int))
-      }
-    } 
-    
-    # Covariate:
-    if (!missing(covariates))
-    {
-      Pred <- c(Pred, covariates)
-      for (CV in seq_along(covariates)){
-        int <- aData[laggedVars_fixedEffects] * aData[[covariates[CV]]]
-        names(int) <- paste0(laggedVars_fixedEffects,"_x_",covariates[[CV]])
-        aData <- cbind(aData,int)
-        Pred <- c(Pred,  names(int))
-      }
-    }
-    
-    # Fixed effects:
-    Fixed <- cbind(intercept=1,aData[Pred])
-    
-    # Run lmmlasso:
-    noPen <- c(1,which(names(Fixed)%in%autoLaggedVars))
-    Res <- lmmlasso(x=as.matrix(Fixed), y=aData[[response]], z = as.matrix(Rand), grp = aData[[idvar]], lambda = lambda, nonpen = noPen, pdMat=pdMat)
-
-    Coef <- cbind(dep = response, as.data.frame(t(coef(Res)[-1])))
-    return(list(
-      Result = Res,
-#       formula = formula,
-#       FixEf = as.data.frame(t(FixEf)),
-#       FixEf_SE = as.data.frame(t(FixEf_SE)),
-      Coef=Coef
-#       se.Coef=se.Coef,
-#       pvals=pvals,
-#       ranEffects=ranEffects,
-#       ranPerID=ranPerID,
-#       Variance=Variance
-    ))
+    stop("'lmmlasso' not supported")
+#     if (orthogonal){
+#       pdMat <- "pdDiag"
+#     } else {
+#       pdMat <- "pdSym"
+#     }
+#     # Removing missing values:
+#     aData <- aData[rowSums(is.na(aData))==0,]
+# 
+#     # Random effects matrix:
+#     Rand <- cbind(intercept=1,aData[c(autoLaggedVars,laggedVars[include])])
+#     
+#     # Fixed effects matrix:
+#     Pred <- character(0)
+#     
+#     # Vector of lagged variables for fixed effects:
+#     if (includeType == "stepwise"){
+#       laggedVars_fixedEffects <- c(autoLaggedVars,laggedVars[include])
+#     } else {
+#       laggedVars_fixedEffects <-c(autoLaggedVars,laggedVars)
+#     }
+#     
+#     # Add to predictor set:
+#     Pred <- c(Pred,laggedVars_fixedEffects)
+#     
+#     # If period has more than 1 level:
+#     if (length(unique(aData[[periodvar]])) > 1)
+#     {
+#       # Fixed effect for period:
+#       Pred <- c(Pred, periodvar)
+#       
+#       # Add interaction columns:
+#       
+#       # Interaction lagged vars & period:
+#       int <- aData[laggedVars_fixedEffects] * aData[[periodvar]]
+#       names(int) <- paste0(names(int),"_x_",periodvar)
+#       aData <- cbind(aData,int)
+#       Pred <- c(Pred,  names(int))
+#       
+#       # If not missing, interaction with treatment:
+#       if (!missing(treatmentvar))
+#       {
+#         Pred <- c(Pred, treatmentvar)
+#         
+#         # Interaction lagged vars & period:
+#         int <- aData[treatmentvar] * aData[[periodvar]]
+#         names(int) <- paste0(treatmentvar,"_x_",periodvar)
+#         aData <- cbind(aData,int)
+#         Pred <- c(Pred,  names(int))
+#         
+#         # 3 way interaction:
+#         int <- aData[treatmentvar] * aData[[periodvar]] * aData[[treatmentvar]]
+#         names(int) <- paste0(treatmentvar,"_x_",periodvar,"_x_",treatmentvar)
+#         aData <- cbind(aData,int)
+#         Pred <- c(Pred,  names(int))
+#       }
+#     } 
+#     
+#     # Covariate:
+#     if (!missing(covariates))
+#     {
+#       Pred <- c(Pred, covariates)
+#       for (CV in seq_along(covariates)){
+#         int <- aData[laggedVars_fixedEffects] * aData[[covariates[CV]]]
+#         names(int) <- paste0(laggedVars_fixedEffects,"_x_",covariates[[CV]])
+#         aData <- cbind(aData,int)
+#         Pred <- c(Pred,  names(int))
+#       }
+#     }
+#     
+#     # Fixed effects:
+#     Fixed <- cbind(intercept=1,aData[Pred])
+#     
+#     # Run lmmlasso:
+#     noPen <- c(1,which(names(Fixed)%in%autoLaggedVars))
+#     Res <- lmmlasso(x=as.matrix(Fixed), y=aData[[response]], z = as.matrix(Rand), grp = aData[[idvar]], lambda = lambda, nonpen = noPen, pdMat=pdMat)
+# 
+#     Coef <- cbind(dep = response, as.data.frame(t(coef(Res)[-1])))
+#     return(list(
+#       Result = Res,
+# #       formula = formula,
+# #       FixEf = as.data.frame(t(FixEf)),
+# #       FixEf_SE = as.data.frame(t(FixEf_SE)),
+#       Coef=Coef
+# #       se.Coef=se.Coef,
+# #       pvals=pvals,
+# #       ranEffects=ranEffects,
+# #       ranPerID=ranPerID,
+# #       Variance=Variance
+#     ))
     
   }
 

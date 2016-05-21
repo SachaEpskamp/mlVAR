@@ -8,6 +8,9 @@ movingWindow <- function(
   estimator = "lmer",
   ... # Arguments sent to mlVAR
 ){
+  # Global dummies:
+  . <- NULL
+  
   nAuto <- length(autoLaggedVars)
   nLagged <- length(laggedVars)
   nEffects <- nAuto + nLagged

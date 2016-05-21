@@ -4,6 +4,174 @@
 
 
 mlVARsim <- function(
+  # Simulation setup:
+  nPerson = 10, # # of persons
+  nNode = 5, # # of nodes 
+  nTime = 100, # Or vector with time points per person
+  lag = 1,
+  
+  # Arguments for parameters:
+  DF_theta = nNode*2,
+  mu_SD = c(1,1),
+  init_beta_SD = c(0.1,1),
+  fixedMuSD = 1,
+  shrink_fixed = 0.9,
+  shrink_deviation = 0.9
+){
+  if (length(nTime)==1){
+    nTime <- rep(nTime,nPerson)
+  }
+  # Number of temporal effects:
+  nTemporal <- nNode^2 * lag
+  
+  # 1. Generate structures:
+  # Generate Omega:
+
+  Omega <- genPositiveDefMat(nNode + nTemporal, "onion", rangeVar = c(1,1))$Sigma
+  
+  # Generate SD and scale:
+  SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nNode)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nNode)))
+  Omega <- diag(SD) %*%Omega %*% diag(SD)
+
+  # Generate fixed contemporaneous:
+  Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+  # Generate fixed means:
+  mu_fixed <- rnorm(nNode,0,fixedMuSD)
+  # Generate fixed betas:
+  beta_fixed <- rnorm(nTemporal,0)
+
+  # 2. Generate residual covariance matrices:
+  Theta <- rWishart(nPerson, DF_theta, Theta_fixed/DF_theta)
+  
+  # 3. Generate random parameter sets:
+  if (lag > 0){
+    repeat{
+      Pars <- rmvnorm(nPerson, c(mu_fixed,beta_fixed), sigma = Omega)
+      Mus <- Pars[,1:nNode]
+      
+      Betas <- array(c(t(Pars[,-(1:nNode)])), c(nNode,nNode*lag,nPerson))
+      
+      # 4. Construct the matrices:
+      if (lag>1){
+        under <- cbind(diag(nNode*(lag-1)),matrix(0,nNode*(lag-1),nNode))
+        
+        ev <- sapply(seq_len(nPerson),function(i){
+          mat <- rbind(Betas[,,i],under)
+          eigen(mat)$values
+        })
+        
+      } else {
+        
+        ev <- sapply(seq_len(nPerson),function(i){
+          eigen(Betas[,,i])$values
+        })
+        
+      }
+      # 5. Store results:
+      allEV <- c(ev)
+      
+      # 6. Break if all Re(ev)^2 + Im(ev)^2 < 1
+      if (all(Re(ev)^2 + Im(ev)^2 < 1)){
+        
+        # simulate VAR for every person:
+        DataList <- lapply(1:nPerson,function(p){
+          
+          pars <- lapply(seq_len(lag),function(l)array(c(Betas[,,p]),c(nNode,nNode,lag))[,,l])
+          # If lag > 0 simulate VAR:
+          if (lag > 0){
+            res <- simulateVAR(pars, means = Mus[p,], lags = seq_len(lag), Nt = nTime[p],init = Mus[p,],burnin = 100,residuals = Theta[,,p]) 
+          } else {
+            res <- rmvnorm(nTime[p],Mus[p,],Theta[,,p])
+          }
+          colnames(res) <- paste0("V",1:nNode)
+          res$ID <- p
+          res
+        })
+        
+        # Rbind data:
+        Data <- do.call(rbind,DataList)
+        
+        # 10. If any absolute > 10, go to 6a
+        if (!any(abs(Data[,1:nNode]) > 100)){
+          break
+        }
+      } 
+      
+      # Else shrink:
+      beta_fixed <- beta_fixed * shrink_fixed
+      D <- diag(sqrt(diag(Omega)))
+      D[-(1:nNode),-(1:nNode)] <- shrink_deviation * D[-(1:nNode),-(1:nNode)] 
+      Omega <- D %*% cov2cor(Omega) %*% D
+    }
+    
+  } else {
+    Pars <- rmvnorm(nPerson, mu_fixed, sigma = Omega)
+    Mus <- Pars[,1:nNode]
+    Betas <- array(dim = c(0,0,nPerson))
+    
+    # simulate VAR for every person:
+    DataList <- lapply(1:nPerson,function(p){
+  
+
+        res <- as.data.frame(rmvnorm(nTime[p],Mus[p,],Theta[,,p]))
+      colnames(res) <- paste0("V",1:nNode)
+      res$ID <- p
+      res
+    })
+    
+    # Rbind data:
+    Data <- do.call(rbind,DataList)
+    
+  }
+  
+  
+  # Create the list:
+  model <- list(
+    mu = modelArray(mean = mu_fixed, SD = mu_SD, subject = lapply(1:nrow(Mus),function(i)Mus[i,])),
+    Beta = modelArray(mean = array(beta_fixed,c(nNode,nNode,lag)), SD = array(sqrt(diag(Omega[-(1:nNode),-(1:nNode)])),c(nNode,nNode,lag)), 
+                      subject = lapply(1:nPerson, function(p)array(Betas[,,p],c(nNode,nNode,lag)))),
+    Omega_mu = modelCov(
+      cov = modelArray(mean = Omega[1:nNode,1:nNode])
+    ),
+    Theta = modelCov(
+      cov = modelArray(mean = Theta_fixed, subject = lapply(1:nPerson,function(p)Theta[,,p]))
+    ),
+    Omega = modelCov(
+      cov = modelArray(mean = Omega)
+    )
+    
+  )
+  
+  
+  # Data generated! Now return in sensible list:
+  Results <- list(
+    Data = Data,
+#     beta_fixed = array(beta_fixed,c(nNode,nNode,lag)),
+#     beta_SD = array(sqrt(diag(Omega[-(1:nNode),-(1:nNode)])),c(nNode,nNode,lag)),
+#     mu_fixed = mu_fixed,
+#     mu_SD = sqrt(diag(Omega[1:nNode,1:nNode])),
+#     Theta_fixed = Theta_fixed,
+#     DF_theta = DF_theta,
+#     Omega = Omega,
+#     Omega_mu = Omega[1:nNode,1:nNode],
+#     Omega_beta = Omega[-(1:nNode),-(1:nNode)],
+#     Theta = Theta,
+#     Mus = Mus,
+#     Betas = Betas,
+    vars = paste0("V",1:nNode),
+    idvar = "ID",
+    lag=lag,
+model=model
+  )
+  
+  class(Results) <- "mlVARsim"
+  
+  return(Results)
+}
+
+
+### OLD ###
+mlVARsim0 <- function(
   nPerson = 10, # # of persons
   nNode = 5, # # of nodes 
   nTime = 100,
@@ -19,6 +187,9 @@ mlVARsim <- function(
   residualSDrange = c(0.05,0.1),
   verbose = TRUE
 ){
+  
+  warning("Function is deprecated and will be removed soon. Use mlVARsim instead.")
+  
   residualStyle <- match.arg(residualStyle)
   
   # Number of parameters:
@@ -56,7 +227,7 @@ mlVARsim <- function(
       return(Beta)
     })
     Betas <- lapply(RandomEffects,function(x){
-
+      
       xx <- x + Pars$fixed
       xx[!Pars$included] <- 0
       return(xx)
@@ -97,13 +268,15 @@ mlVARsim <- function(
       return(residSDs)
     })
   }
-  
+
   ### Simulate data:
   Data <- dplyr::rbind_all(lapply(seq_len(nPerson),function(i){
-    Data <- simulateVAR(Betas[[i]],1,nTime,residuals = Resids[[i]])
+    Data <- simulateVAR(Betas[[i]],lags=1,Nt=nTime,residuals = Resids[[i]])
     Data$ID <- i
     return(Data)
   }))
+  
+  
   
   fullCov <- matrix(0,nrow(Pars),nrow(Pars))
   fullCov[Pars$included,Pars$included] <- parCov
@@ -121,53 +294,6 @@ mlVARsim <- function(
     vars = paste0("V",seq_len(nNode))
   )
   
-  class(Res) <- "mlVARsim"
+  class(Res) <- "mlVARsim0"
   return(Res)
-}
-
-# Function to sample a VAR sequence
-library("mvtnorm")
-
-simulateVAR <- function(
-  pars, # a single VAR matrix or a list of VAR matrices for each lag
-  lags = 1, # A sequence of lags that corresponds to the lags of each matrix in the 'pars' argument
-  Nt= 100, # Number of time points to sample
-  init, # Initial state, defaults to zeros
-  residuals = 0.1, # Can also be a matrix of residual covariances!
-  burnin = min(round(Nt / 2),100)
-)
-{
-  if (is.matrix(pars)) pars <- list(pars)
-  if (any(sapply(pars,function(x) length(unique(dim(x))) > 1 ))) stop ("non-square graph detected.")
-  
-  Ni <- ncol(pars[[1]])
-  maxLag <- max(lags)
-  
-  # Set residuals:
-  if (length(residuals)==1){
-    residuals <- diag(residuals,Ni)
-  } else if (length(residuals) == Ni){
-    residuals <- diag(residuals)
-  } 
-  
-  if (!is.matrix(residuals) && ncol(residuals) != Ni && nrow(residuals) != Ni){
-    stop("'residuals' is not a square matrix")
-  }
-  
-  totTime <- Nt + burnin
-  
-  if (missing(init)) 
-  {
-    init <- matrix(0,maxLag,Ni)
-  }
-  
-  
-  Res <- matrix(,totTime,Ni)
-  Res[1:maxLag,] <- init
-  for (t in (maxLag+1):(totTime))
-  {
-    Res[t,] <- rowSums(do.call(cbind,lapply(seq_along(lags),function(i)pars[[i]] %*% Res[t-lags[i],]))) + rmvnorm(1,rep(0,Ni), residuals)
-  }    
-  
-  return(as.data.frame(Res[-(1:burnin),]))
 }

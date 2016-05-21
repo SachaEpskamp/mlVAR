@@ -1,0 +1,6 @@
+Changes in version 0.3
+  o Complete rework of package! 
+    o mlVAR, mlVARsim, and relevant methods have been completely rewritten
+    o Now support contemporaneous effects and between-subjects effects
+    o Old functions are now labeled mlVAR0, mlVARsim0, etcetera
+  

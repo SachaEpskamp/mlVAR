@@ -5,17 +5,12 @@
 Multilevel VAR Estimation for Multiple Time Series
 }
 \description{
-The function \code{mlVAR} computes estimates of the multivariate vector autoregression model as introduced by Bringmann et al. (2013) which can be extended through treatment effects, covariates and pre- and post assessment effects. 
+The function \code{mlVAR0} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
 }
 \usage{
-mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
-                 periodvar, treatmentvar, covariates, timevar,
-                 maxTimeDiff, control = list(optimizer = "bobyqa"),
-                 verbose = TRUE, orthogonal, estimator = c("lmer",
-                 "lmmlasso"), method = c("default", "stepwise",
-                 "movingWindow"), laginteractions = c("none", "mains",
-                 "interactions"), critFun = BIC, lambda = 0,
-                 center = c("inSubject","general","none"))
+mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar, estimator = c("lmer"), 
+    temporal = c("default", "correlated", "orthogonal", "fixed"),  verbose = TRUE, 
+    compareToLags, orthogonal)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -33,147 +28,124 @@ String indicating the subject ID
 Vector indicating the lags to include
 }
   \item{dayvar}{
-String indicating assessment day (if missing, every assessment is set to one day)
+String indicating assessment day. Adding this argument makes sure that the first measurement of a day is not regressed on the last measurement of the previous day. IMPORTANT: only add this if the data has multiple observations per day.
 }
   \item{beepvar}{
-String indicating assessment beep per day (if missing, is added)
+String indicating assessment beep per day (if missing, is added). Adding this argument will cause non-consecutive beeps to be treated as missing!
 }
-  \item{periodvar}{
-String indicating the period (baseline, treatment period, etc.) of assessment (if missing, every assessment is set to one period)
-}
-  \item{treatmentvar}{
-Character vector indicating treatment
-}
-  \item{covariates}{
-Character indicating covariates independent of assessment.
-}
-  \item{timevar}{
-  Character indicating the time variable
-}
-  \item{maxTimeDiff}{
-  Maximum time differece to include observation pairs
-}
-  \item{control}{
- A list of arguments sent to \code{\link[lme4]{lmerControl}}
-}
-
-  \item{verbose}{
- Logical to print progress to the console
-}
-
-  \item{orthogonal}{
- Logical to indicate if orthogonal estimation (no correlated random effects) should be used. Defaults to \code{FALSE} if the number of nodes is less than 6 and \code{TRUE} otherwise
-}
-
   \item{estimator}{
- Estimator to use. Note: \code{lmmlasso} implementation is very experimental
+The estimator to be used. Currently only \code{"lmer"} is supported.
 }
-
-  \item{method}{
- Method to use. Experimental
+  \item{temporal}{
+How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise.
 }
-
-  \item{laginteractions}{
- Experimental, do not use.
+  \item{verbose}{
+Logical indicating if console messages and the progress bar should be shown.
 }
-
-  \item{critFun}{
- Experimental, do not use.
+  \item{compareToLags}{
+A vector indicating which lags to base the data on. If the model is to be compared with a model with multiple lags using \code{\link{mlVARcompare}}, this argument must be used to make sure the number of observations is the same in both models (e.g., a lag 1 model can model the second observation of a day and a lag-2 model can't, causing different number of observations and incomparable models). It is suggested to not use this argument unless you want to compare models, and always run \code{mlVAR} without using this argument afterwards in the selected model.
 }
-
-  \item{lambda}{
- lmmlasso lambda parameter
-}
-
-  \item{center}{
- Centering to be used. \code{"inSubject"} uses within-person centering, \code{"general"} uses grand-mean centering and \code{"none"} does not use centering. IMPORTANT NOTE: \code{"inSubject"} leads to coefficients to resemble within-person slopes, the other centering option leads to coefficients to be a blend of within and between person slopes.
+  \item{orthogonal}{
+Deprecated argument only added for backward competability. Ignore.
 }
 }
 \details{
-mlVAR has been built to extract individual network dynamics by estimating a multilevel vector autoregression model that models the time dynamics of selected variables both within an individual and on group level. For example, in a lag-1-model each variable at time point t is regressed to a lagged version of itself at time point t-1 and all other variables at time point t-1. In psychological research, for example, this analysis can be used to relate the dynamics of symptoms on one day (as assessed by experience sampling methods) to the dynamics of these symptoms on the consecutive day. }
+This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals.
+
+For more information on multi-level VAR and centering please see Hamaker and Grasman (2014) and Bringmann et al., (2013). A draft on the paper describing this package and metho can be obtained from the maintainer (mail@sachaepskamp.com).
+}
 \value{
-mlVAR returns a 'mlVAR' object containing
- \item{fixedEffects}{A matrix that contains all fixed effects coefficients with dependent variables as rows and the lagged independent variables as columns.}
- \item{se.fixedEffects}{A matrix that contains all standard errors of the fixed effects.}
- \item{randomEffects}{A list of matrices that contain the random effects coefficients.}
- \item{randomEffectsVariance}{A matrix containing the estimated variances between the random-effects terms}
- \item{pvals}{A matrix that contains p-values for all fixed effects.}
- \item{pseudologlik}{The pseudo log-likelihood.}
- \item{BIC}{Bayesian Information Criterion, i.e. the sum of all univariate models' BICs}
- \item{input}{List containing the names of variables used in the analysis}
+An \code{mlVAR} object 
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
+
+Hamaker, E. L., & Grasman, R. P. (2014). To center or not to center? Investigating inertia with a multilevel autoregressive model. Frontiers in psychology, 5.
 }
 \author{
-Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and Laura F. Bringmann (laura.bringmann@ppw.kuleuven.be)
+Sacha Epskamp (mail@sachaepskamp.com)
 }
-
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{fixedEffects}}, \code{\link{fixedEffects}}
+\code{\link{mlVARcompare}}, \code{\link{summary.mlVAR}}, \code{\link{plot.mlVAR}}
 }
 \examples{
-### Small network ###
-nVar <- 3
-nPerson <- 25
-nTime <- 25
+### Small example ###
+# Simulate data:
+Model <- mlVARsim(nPerson = 50, nNode = 3, nTime = 50, lag=1)
 
-# Simulate model and data:
-Model <- mlVARsim(nPerson,nVar,nTime,sparsity = 0.5)
+# Estimate using correlated random effects:
+fit1 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, temporal = "correlated")
 
-# Run mlVAR:
-Res <- mlVAR(Model)
+# Print some pointers:
+print(fit1)
 
-# Compare true fixed model with significant edges of estimated fixed model:
+# Summary of all parameter estimates:
+summary(fit1)
+
+# Compare temporal relationships:
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.labels = TRUE)
-plot(Res,"fixed", title = "Estimated model", layout = "circle", onlySig = TRUE, 
-        alpha = 0.05, edge.labels = TRUE)
+plot(Model, "temporal", title = "True temporal relationships", layout = "circle")
+plot(fit1, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
-# Compare true and estimated individual differences in parameters:
+# Compare contemporaneous partial correlations:
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.color = "blue", 
-        edge.labels = TRUE)
-plot(Res,"fixed", title = "Estimated model", layout = "circle", edge.color = "blue", 
-        edge.labels = TRUE)
+plot(Model, "contemporaneous", title = "True contemporaneous relationships", 
+    layout = "circle", partial = TRUE)
+plot(fit1, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle", partial = TRUE)
 
-# Compare networks of subject 1:
+# Compare between-subjects partial correlations:
 layout(t(1:2))
-plot(Model,"subject",subject = 1, title = "True model",layout="circle", 
-        edge.labels = TRUE)
-plot(Res,"subject",subject = 1,title = "Estimated model", layout = "circle", 
-        edge.labels = TRUE)
+plot(Model, "between", title = "True between-subjects relationships", layout = "circle", 
+    partial = TRUE)
+plot(fit1, "between", title = "Estimated between-subjects relationships", 
+    layout = "circle", partial = TRUE)
 
+# Run same model with non-correlated temporal relationships and fixed-effect model:
+fit2 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
+    temporal = "orthogonal")
+fit3 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
+    temporal = "fixed")
+
+# Compare models:
+mlVARcompare(fit1,fit2,fit3)
+
+# Inspect true parameter correlation matrix:
+Model$model$Omega$cor$mean
+# Even though correlations are high, orthogonal model works well often!
 
 \dontrun{
-### Large network ###
-nVar <- 10
-nPerson <- 50
-nTime <- 50
+### Large example ###
+Model <- mlVARsim(nPerson = 100, nNode = 10, nTime = 100,lag=1)
 
-# Simulate model and data:
-Model <- mlVARsim(nPerson,nVar,nTime, sparsity = 0.5)
+# Correlated random effects no longer practical. Use orthogonal or fixed:
+fit4 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
+    temporal = "orthogonal")
+fit5 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
+    temporal = "fixed")
 
-# Run orthogonal mlVAR:
-Res <- mlVAR(Model, orthogonal = TRUE)
+# Compare models:
+mlVARcompare(fit4, fit5)
 
-# Compare true fixed model with significant edges of estimated fixed model:
+# Compare temporal relationships:
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle")
-plot(Res,"fixed", title = "Estimated model", layout = "circle", onlySig = TRUE, 
-        alpha = 0.05)
+plot(Model, "temporal", title = "True temporal relationships", layout = "circle")
+plot(fit4, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
-# Compare true and estimated individual differences in parameters:
+# Compare contemporaneous partial correlations:
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.color = "blue")
-plot(Res,"fixed", title = "Estimated model", layout = "circle", edge.color = "blue")
+plot(Model, "contemporaneous", title = "True contemporaneous relationships", 
+    layout = "circle", partial = TRUE)
+plot(fit4, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle", partial = TRUE)
 
-# Compare networks of subject 1:
+# Compare between-subjects partial correlations:
 layout(t(1:2))
-plot(Model,"subject",subject = 1, title = "True model",layout="circle")
-plot(Res,"subject",subject = 1,title = "Estimated model", layout = "circle")
+plot(Model, "between", title = "True between-subjects relationships", layout = "circle", 
+    partial = TRUE)
+plot(fit4, "between", title = "Estimated between-subjects relationships", 
+    layout = "circle", partial = TRUE)
 }
 }
+

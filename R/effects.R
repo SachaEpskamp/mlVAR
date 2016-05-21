@@ -8,9 +8,19 @@ asterix <- function(x){
 
 ## fixedEffects:
 fixedEffects <- function(object,digits=5){
+  # global dummies:
+  . <- NULL
+  effect <- NULL
+  
   if (is(object,"mlVAR_MW")){
     return(object$fixedEffects)
   }
+  
+  if (class(object)!="mlVAR0"){
+    stop("Only works for mlVAR0 objects.")
+  }
+  
+  warning("Function is deprecated and will be removed soon.")
 
   # Nodes:
   Nodes <- unique(object$fixedEffects$dep)
@@ -57,6 +67,17 @@ fixedEffects <- function(object,digits=5){
 randomEffects<- function(object, digits=5){
   if (is(object,"mlVAR_MW")) stop("Cannot estimate random effects with moving window approach")
 
+  # global dummies:
+  . <- NULL
+  variance <- NULL
+  
+  
+  if (class(object)!="mlVAR0"){
+    stop("Only works for mlVAR0 objects.")
+  }
+  
+  warning("Function is deprecated and will be removed soon.")
+  
   # Predictors:
   Predictor = colnames(object$randomEffectsVariance)[-1]
   
