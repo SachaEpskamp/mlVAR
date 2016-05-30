@@ -244,7 +244,8 @@ lmer_mlVAR <-
     
     ### Compute Theta ####
     Theta_obtained <- matrix(NA, nVar, nVar)
-    diag(Theta_obtained)  <- sapply(lmerResults, lme4::sigma)^2
+    # diag(Theta_obtained)  <- sapply(lmerResults, lme4::sigma)^2
+    diag(Theta_obtained)  <- sapply(lmerResults, stats::sigma)^2
     
     # Estimate individual via correlating residuals:
     resids <- lapply(seq_along(Outcomes),

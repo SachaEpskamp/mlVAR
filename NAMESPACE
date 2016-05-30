@@ -18,7 +18,7 @@ importFrom(lme4, "fixef")
 importFrom(lme4, "ranef")
 importFrom(lme4, "VarCorr")
 importFrom(lme4, "lmerControl")
-importFrom(lme4, "sigma")
+#importFrom(lme4, "sigma")
 importFrom(arm, "se.fixef")
 importFrom(qgraph, "qgraph")
 # importFrom(R2jags, "jags")
@@ -36,3 +36,11 @@ export(mlVAR0)
 S3method(plot, mlVAR0)
 S3method(print, mlVAR0)
 S3method(summary, mlVAR0)
+
+
+  importFrom("graphics", "plot")
+  importFrom("methods", "is")
+  importFrom("stats", "AIC", "BIC", "as.formula", "ave", "cov",
+             "cov2cor", "na.omit", "pnorm", "quantile", "rWishart",
+             "residuals", "rnorm", "runif", "sd")
+  importFrom("utils", "head", "setTxtProgressBar", "txtProgressBar")
