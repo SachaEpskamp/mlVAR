@@ -268,7 +268,7 @@ lmer_mlVAR <-
     # Rescale to fit obtained Theta:
     D <- sqrt(diag(diag(Theta_obtained)))
     Theta_fixed <- D %*% cov2cor(Theta_fixed_posthoc) %*% D
-    
+
     Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
     
     # Using least-squares:

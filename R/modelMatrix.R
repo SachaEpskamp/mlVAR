@@ -98,6 +98,7 @@ parSamples <- function(
   )
 }
 
+
 # Wrapper function to compute this based on samples of covariance:
 covSamples <- function(samples, fixed, subject){
   
@@ -160,7 +161,7 @@ covSamples <- function(samples, fixed, subject){
   # Precision samples:
   precSamples <- fixedSamples
   for (i in 1:dimV(precSamples)[1]){
-    precSamples[i,,] <- solve(precSamples[i,,])
+    precSamples[i,,] <- corpcor::pseudoinverse(precSamples[i,,])
   } 
   
   # Precision:
@@ -174,7 +175,7 @@ covSamples <- function(samples, fixed, subject){
     for (p in 1:nP){
       precSamples <- subjectSamples[,,,p]
       for (i in 1:dimV(precSamples)[1]){
-        precSamples[i,,] <- solve(precSamples[i,,])
+        precSamples[i,,] <- corpcor::pseudoinverse(precSamples[i,,])
       }
       prec_subject[[p]] <- apply(precSamples,2:3,mean)
     } 
@@ -271,7 +272,7 @@ modelCov <- function(
       x[] <- NA
       return(x)
     } else {
-      return(solve(x))
+      return(corpcor::pseudoinverse(x))
     }
   }
   cor2pcorNA <- function(x){
