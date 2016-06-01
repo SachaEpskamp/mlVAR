@@ -25,6 +25,7 @@ Important to note is that the number of observations must be equal to make model
 Sacha Epskamp (mail@sachaepskamp.com)
 }
 \examples{
+\dontrun{
 ### Small example ###
 # Simulate data:
 Model <- mlVARsim(nPerson = 50, nNode = 3, nTime = 50, lag=1)
@@ -39,4 +40,5 @@ fit3 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1,
 
 # Compare models:
 mlVARcompare(fit1,fit2,fit3)
+}
 }

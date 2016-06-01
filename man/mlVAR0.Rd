@@ -118,6 +118,7 @@ Sacha Epskamp (mail@sachaepskamp.com), Marie K. Deserno (m.k.deserno@uva.nl) and
 \code{\link{fixedEffects}}, \code{\link{fixedEffects}}
 }
 \examples{
+\dontrun{
 ### Small network ###
 nVar <- 3
 nPerson <- 25
@@ -150,7 +151,7 @@ plot(Res,"subject",subject = 1,title = "Estimated model", layout = "circle",
         edge.labels = TRUE)
 
 
-\dontrun{
+
 ### Large network ###
 nVar <- 10
 nPerson <- 50

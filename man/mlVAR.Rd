@@ -70,6 +70,7 @@ Sacha Epskamp (mail@sachaepskamp.com)
 \code{\link{mlVARcompare}}, \code{\link{summary.mlVAR}}, \code{\link{plot.mlVAR}}
 }
 \examples{
+\dontrun{
 ### Small example ###
 # Simulate data:
 Model <- mlVARsim(nPerson = 50, nNode = 3, nTime = 50, lag=1)
@@ -115,7 +116,7 @@ mlVARcompare(fit1,fit2,fit3)
 Model$model$Omega$cor$mean
 # Even though correlations are high, orthogonal model works well often!
 
-\dontrun{
+
 ### Large example ###
 Model <- mlVARsim(nPerson = 100, nNode = 10, nTime = 100,lag=1)
 
