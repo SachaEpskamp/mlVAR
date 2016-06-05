@@ -103,7 +103,7 @@ summary.mlVAR <- function(
   
   if ("between" %in% show){
     
-    P <- object$results$Gamma$P
+    P <- object$results$Gamma_Omega_mu$P
     cor <- object$results$Omega_mu$cor$mean
     pcor <- object$results$Omega_mu$pcor$mean
     UT <- upper.tri(cor)

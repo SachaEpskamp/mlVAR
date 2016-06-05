@@ -5,9 +5,9 @@
 
 mlVARsim <- function(
   # Simulation setup:
-  nPerson = 10, # # of persons
+  nPerson = 10, # # of persons.
   nNode = 5, # # of nodes 
-  nTime = 100, # Or vector with time points per person
+  nTime = 100, # Or vector with time points per person. 
   lag = 1,
   
   # Arguments for parameters:
@@ -35,6 +35,7 @@ mlVARsim <- function(
 
   # Generate fixed contemporaneous:
   Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+  
   # Generate fixed means:
   mu_fixed <- rnorm(nNode,0,fixedMuSD)
   # Generate fixed betas:

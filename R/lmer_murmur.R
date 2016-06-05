@@ -12,7 +12,7 @@ BetatoArray <- function(x, mod, out){
 }
 
 lmer_mlVAR <- 
-  function(model,augData,idvar,betweenSubjects = "posthoc", verbose=TRUE,temporal="unique",...){
+  function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",...){
 
 
     
@@ -25,6 +25,7 @@ lmer_mlVAR <-
     lmerResults <- list()
     
     if (verbose){
+      message("Estimating temporal and between-subjects effects")
       pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
     }
     # start nodewise loop:
@@ -105,7 +106,7 @@ lmer_mlVAR <-
     ### First from random effects:
     #     if (betweenSubjects == "posthoc"){
     #       mu_cov <- cov(do.call(rbind,mu_subject))  
-    #       mu_prec <- solve(mu_cov)
+    #       mu_prec <- corpcor::pseudoinverse(mu_cov)
     #       
     #     } else {
     #       
@@ -113,24 +114,28 @@ lmer_mlVAR <-
     # Which predictor codes are the variables:
     modSum <- model %>% filter_(~type == "between") %>% group_by_("pred") %>% dplyr::summarize_(id = ~unique(predID))
     IDs <- modSum$id[match(Outcomes, modSum$pred)]
-    
+   
     # Construct gamma and D:
-    Gamma <- Gamma_SE <- Gamma_P <- matrix(0, length(Outcomes), length(Outcomes))
-    D <- diag(1/mu_SD^2)
+    Gamma_Omega_mu <- Gamma_Omega_mu_SE <- Gamma_Omega_mu_P <- matrix(0, length(Outcomes), length(Outcomes))
+
     for (i in seq_along(Outcomes)){
-      Gamma[i,-i] <- fixef(lmerResults[[i]])[IDs[-i]] 
-      Gamma_SE[i,-i] <- se.fixef(lmerResults[[i]])[IDs[-i]] 
+      Gamma_Omega_mu[i,-i] <- fixef(lmerResults[[i]])[IDs[-i]] 
+      Gamma_Omega_mu_SE[i,-i] <- se.fixef(lmerResults[[i]])[IDs[-i]] 
     }
-    rownames(Gamma) <- colnames(Gamma) <- rownames(Gamma_SE) <- colnames(Gamma_SE) <- Outcomes
-    Results[["Gamma"]] <- modelArray(mean = Gamma, SE = Gamma_SE)
+    rownames(Gamma_Omega_mu) <- colnames(Gamma_Omega_mu) <- rownames(Gamma_Omega_mu_SE) <- colnames(Gamma_Omega_mu_SE) <- Outcomes
+    Results[["Gamma_Omega_mu"]] <- modelArray(mean = Gamma_Omega_mu, SE = Gamma_Omega_mu_SE)
     
     
     # Inverse estimate:
-    inv <- D %*% (diag(length(Outcomes)) - Gamma)
+    D <- diag(1/mu_SD^2)
+    inv <- D %*% (diag(length(Outcomes)) - Gamma_Omega_mu)
     # Average:
     inv <- (inv + t(inv))/2
+    # Force positive/definite:
+    inv <- inv - diag(nrow(inv)) * min(min(eigen(inv)$values),0)
+  
     # invert:
-    mu_cov <- solve(inv)
+    mu_cov <- corpcor::pseudoinverse(inv)
     mu_prec <- inv
     # }
     colnames(mu_cov) <- rownames(mu_cov) <- Outcomes
@@ -240,41 +245,11 @@ lmer_mlVAR <-
     
     
     
-    
-    
-    ### Compute Theta ####
-    Theta_obtained <- matrix(NA, nVar, nVar)
-    # diag(Theta_obtained)  <- sapply(lmerResults, lme4::sigma)^2
-    diag(Theta_obtained)  <- sapply(lmerResults, stats::sigma)^2
-    
-    # Estimate individual via correlating residuals:
-    resids <- lapply(seq_along(Outcomes),
-                     function(i){
-                       resid <- residuals(lmerResults[[i]])
-                       id <- as.numeric(names(resid))
-                       df <- data.frame(foo = resid, id = id)
-                       left_join(data.frame(id = seq_len(nrow(augData))), df, by = "id")[,2]
-                     })
-    resid <- as.data.frame(do.call(cbind,resids))
-    
-    # Compute observed residuals covariances:
-    Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
-      cov(resid[augData[[idvar]] == id,],use = "pairwise.complete.obs")
-    })
-    
-    # abind all and compute means:
-    Theta_fixed_posthoc <- apply(do.call(abind,c(Theta_posthoc,along=3)),1:2,mean,na.rm=TRUE)
-    
-    # Rescale to fit obtained Theta:
-    D <- sqrt(diag(diag(Theta_obtained)))
-    Theta_fixed <- D %*% cov2cor(Theta_fixed_posthoc) %*% D
-
-    Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
-    
+      
     # Using least-squares:
     # IDs of beta:
-    betaIDs <- as.numeric(rownames(ranef(lmerResults[[1]])[[idvar]]))
-    
+#     betaIDs <- as.numeric(rownames(ranef(lmerResults[[1]])[[idvar]]))
+#     
     #     Theta_LeastSquares <- lapply(seq_along(betaIDs),function(i){
     #       
     #       id <- betaIDs[i]
@@ -290,7 +265,7 @@ lmer_mlVAR <-
     #       # L is predictors:
     #       L <- as.matrix(subjectData[,predID])
     #       
-    #       #       t(C) %*% L %*% solve(t(L) %*% L)
+    #       #       t(C) %*% L %*% corpcor::pseudoinverse(t(L) %*% L)
     #       #       Beta_subject[[i]]
     #       
     #       Theta <- 1/(nrow(C)) * t(C - L %*% t(Beta_subject[[i]])) %*% (C - L %*% t(Beta_subject[[i]]))
@@ -306,6 +281,163 @@ lmer_mlVAR <-
     #  if (theta == "leastSquares"){
     #    Theta <- 
     #  }
+    
+    #### OBTAINING THETA #####
+    # Estimate individual via correlating residuals:
+    resids <- lapply(seq_along(Outcomes),
+                     function(i){
+                       resid <- residuals(lmerResults[[i]])
+                       id <- as.numeric(names(resid))
+                       df <- data.frame(foo = resid, id = id)
+                       left_join(data.frame(id = seq_len(nrow(augData))), df, by = "id")[,2]
+                     })
+    resid <- as.data.frame(do.call(cbind,resids))
+    names(resid) <- Outcomes
+    
+    if (contemporaneous %in% c("fixed","unique")){
+      # If unique, via posthoc estimation:
+      
+      ### Compute Theta ####
+      Theta_obtained <- matrix(NA, nVar, nVar)
+      # diag(Theta_obtained)  <- sapply(lmerResults, lme4::sigma)^2
+      diag(Theta_obtained)  <- sapply(lmerResults, stats::sigma)^2
+      
+      if (contemporaneous == "unique"){
+        # Compute observed residuals covariances:
+        Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
+          cov(resid[augData[[idvar]] == id,],use = "pairwise.complete.obs")
+        })
+        
+        # abind all and compute means:
+        Theta_fixed_posthoc <- apply(do.call(abind,c(Theta_posthoc,along=3)),1:2,mean,na.rm=TRUE)
+        
+        # Rescale to fit obtained Theta:
+        D <- sqrt(diag(diag(Theta_obtained)))
+        Theta_fixed <- D %*% cov2cor(Theta_fixed_posthoc) %*% D
+        
+        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
+      } else {
+        
+        Theta_fixed_posthoc <- cov(resid, use = "pairwise.complete.obs")
+        D <- sqrt(diag(diag(Theta_obtained)))
+        Theta_fixed <- D %*% cov2cor(Theta_fixed_posthoc) %*% D
+        
+        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed))
+      }
+
+    } else {
+      ### TWO STEP METHOD ###
+      resid[[idvar]] <- augData[[idvar]]
+      
+      # Output list:
+      lmerResults2 <- list()
+      
+      if (verbose){
+        message("Estimating contemporaneous effects")
+        pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
+      }
+      # start nodewise loop:
+      for (i in seq_along(Outcomes)){
+ 
+        # Setup model:
+          mod <- paste0(
+            Outcomes[i],
+            " ~ 0 + ",
+            paste(Outcomes[-i],collapse="+"),
+            " + ( 0 + ",
+            paste(Outcomes[-i],collapse="+"),
+            ifelse(contemporaneous  == "orthogonal","||","|"),
+            idvar,
+            ")"
+          )        
+  
+        
+        # Formula:
+        formula <- as.formula(mod)
+        
+        # Run lmer:
+        lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))
+        
+        if (verbose){
+          setTxtProgressBar(pb, i)
+        }
+      }
+      if (verbose){
+        close(pb)
+      }
+      
+      
+      ### Gamma_Theta is the least squares regression matrix:
+      Gamma_Theta_fixed <- matrix(0, nVar, nVar)
+      for (i in 1:nVar){
+        Gamma_Theta_fixed[i,-i] <- lme4::fixef(lmerResults2[[i]])[Outcomes[-i]]
+      }
+      colnames(Gamma_Theta_fixed) <- Outcomes
+      rownames(Gamma_Theta_fixed) <- Outcomes
+      
+      # SE; SD; P; subject
+      
+      # SE:
+      Gamma_Theta_SE <- matrix(0, nVar, nVar)
+      for (i in 1:nVar){
+        Gamma_Theta_SE[i,-i] <- arm::se.fixef(lmerResults2[[i]])[Outcomes[-i]]
+      }
+      colnames(Gamma_Theta_SE) <- Outcomes
+      rownames(Gamma_Theta_SE) <- Outcomes
+    
+      # P:
+      Gamma_Theta_P <- 2*(1-pnorm(abs(Gamma_Theta_fixed/Gamma_Theta_SE)))
+      colnames(Gamma_Theta_P) <- Outcomes
+      rownames(Gamma_Theta_P) <- Outcomes
+      
+      # Error variances:
+      D <- diag(1/sapply(lmerResults2,stats::sigma)^2)
+
+      # Inverse estimate:
+      inv <- D %*% (diag(length(Outcomes)) - Gamma_Theta_fixed)
+      
+      # Average:
+      inv <- (inv + t(inv))/2
+      
+      # invert:
+      Theta_fixed_cov <- corpcor::pseudoinverse(inv)
+      Theta_fixed_prec <- inv
+    
+      colnames(Theta_fixed_cov) <- rownames(Theta_fixed_cov) <- 
+        colnames(Theta_fixed_prec) <- rownames(Theta_fixed_prec)  <- Outcomes
+      
+      # Compute random effects:
+      Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <- list()
+      
+      for (p in 1:nrow(ranef(lmerResults2[[1]])[[idvar]])){
+        Gamma_Theta_subject[[p]] <- do.call(rbind,lapply(seq_along(lmerResults2),function(i){
+          res <- rep(0,nVar)
+          res[-i] <- unlist(ranef(lmerResults2[[i]])[[idvar]][p,])
+          res
+        }))
+  
+        Theta_subject_prec[[p]] <- D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]])
+        Theta_subject_cov[[p]] <- corpcor::pseudoinverse(Theta_subject_prec[[p]])
+        Theta_subject_cor[[p]] <- cov2cor(Theta_subject_cov[[p]]) 
+      }
+
+      
+      ### Store results:
+      Results[["Theta"]] <- modelCov(
+        cor = modelArray(mean=cov2cor(Theta_fixed_cov),subject = Theta_subject_cor),
+        cov = modelArray(mean=Theta_fixed_cov,subject = Theta_subject_cov),
+        prec = modelArray(mean=Theta_fixed_prec,subject = Theta_subject_prec)
+      )
+      
+      Results[["Gamma_Theta"]] <- modelArray(
+        mean = Gamma_Theta_fixed,
+        subject = Gamma_Theta_subject,
+        SE = Gamma_Theta_SE,
+        P = Gamma_Theta_P
+      )
+    }
+ 
+    
     
     # Goodness of fit
     names(lmerResults) <- Outcomes

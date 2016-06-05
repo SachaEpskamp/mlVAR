@@ -15,6 +15,19 @@ aveLag <- function(x, lag=1){
   }
 }
 
+Scale <- function(x){
+  SD <- sd(x,na.rm=TRUE)
+  if (length(SD) == 0 || is.na(SD)){
+    SD <- 0
+  }
+  if (SD == 0){
+    x[] <- 0
+    return(x)
+  } else {
+    return((x - mean(x,na.rm=TRUE)) / SD)
+  }
+}
+
 
 mlVAR <- function(
   data, # Data frame
@@ -30,7 +43,7 @@ mlVAR <- function(
   # Estimation options:
   # orthogonal, # TRUE or FALSE for orthogonal edges. Defaults to nvar < 6
   estimator = c("lmer"), # Add more? estimator = "least-squares" IGNORES multi-level
-  # contemporaneous = c("default","shared","unique"), # Shared or unique contamporaneous relationships?
+  contemporaneous = c("unique","correlated","orthogonal","fixed","default"), # IF NOT FIXED: 2-step estimation method (lmer again on residuals)
   temporal = c("default", "correlated","orthogonal","fixed"), # Unique = multi-level!
   # betweenSubjects = c("default","GGM","posthoc"), # Should covariances between means be estimated posthoc or as a GGM? Only used when method = "univariate"
   
@@ -40,11 +53,16 @@ mlVAR <- function(
   # JAGSoptions = list(),
   verbose = TRUE, # Include progress bar?
   compareToLags,
+  scale = TRUE, # standardize variables grand mean before estimation
+  
   orthogonal # Used for backward competability
+  
+  # nCores = 1,
   # JAGSexport = FALSE, # Exports jags files
   # n.chain = 3,
   # n.iter = 10000,
   # estOmega = FALSE
+  # ...
 )
 {
   if (0 %in% lags & length(lags) > 1){
@@ -72,7 +90,7 @@ mlVAR <- function(
   # Some dummies for later versions:
   # temporal <- "unique"
   temporal <- match.arg(temporal)
-  contemporaneous <- "shared"
+  contemporaneous <- match.arg(contemporaneous)
   
   if (!missing(orthogonal)){
     temporal <- ifelse(orthogonal,"orthogonal","correlated")
@@ -126,11 +144,22 @@ mlVAR <- function(
   if (temporal == "default"){
     if (length(vars) > 6){
       
-      if (verbose) message("More than 6 nodes, correlations between random effects are set to zero (temporal = 'orthogonal')")
+      if (verbose) message("More than 6 nodes, correlations between temporal random effects are set to zero (temporal = 'orthogonal')")
       temporal <- "orthogonal"
       
     } else {
       temporal <- "correlated"
+    }    
+  }
+  
+  if (contemporaneous == "default"){
+    if (length(vars) > 6){
+      
+      if (verbose) message("More than 6 nodes, correlations between contemporaneous random effects are set to zero (contemporaneous = 'orthogonal')")
+      contemporaneous <- "orthogonal"
+      
+    } else {
+      contemporaneous <- "correlated"
     }    
   }
   
@@ -174,8 +203,45 @@ mlVAR <- function(
   # Remove NA day or beeps:
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
   
-  ### Codes from mlVAR
-  # Create mlVAR-like predictor data-frame:
+  ### STANDARDIZE DATA ###
+  # Test for rank-deficient:
+  X <- as.matrix(na.omit(data[,vars]))
+  qrX <- qr(X)
+  rnk <- qrX$rank
+  
+  if (rnk < length(vars)){
+    # Which node is not being nice?
+    keep <- qrX$pivot[1:rnk]
+    discard <- vars[!seq_along(vars)%in%keep]
+    
+    warning(paste0("The following variables are linearly dependent on other columns, and therefore dropped from the mlVAR analysis:\n",
+                   paste("\t-",discard,collapse="\n")))
+  
+    # If only one, we can find it out:
+    if (rnk == length(vars) - 1){
+      drop <- qrX$pivot[length(qrX$pivot)]
+      test <- try(qr.solve(X[,-drop],X[,drop]))
+      if (!is(test,"try-error")){
+        test <- round(test,4)
+        test <- test[test!=0]
+        msg <- paste0(discard," = ",paste(test," * ",names(test),collapse=" + "))
+        warning(msg)
+      }
+    }
+    
+    vars <- vars[keep]
+    
+  }
+  
+  if (scale){
+    for (v in vars){
+      data[[v]] <- Scale(data[[v]])
+    }
+  }
+ 
+  
+  ### Codes from murmur
+  # Create murmur-like predictor data-frame:
   # Within-subjects model:
   PredModel <- expand.grid(
     dep = vars,
@@ -186,7 +252,7 @@ mlVAR <- function(
   )
   
    # Between-subjects model:
-  if (betweenSubjects == "GGM" & estimator != "JAGS"){
+  if (betweenSubjects == "GGM" & estimator == "lmer"){
     between <- expand.grid(dep=vars,pred=vars,lag=NA,type="between",
                           stringsAsFactors = FALSE)
     
@@ -234,14 +300,16 @@ mlVAR <- function(
       # between: add mean variable:
       
       if (UniquePredModel$type[i] == "between"){
-        augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$pred[i]]],augData[[idvar]], FUN = aveMean)
+        if (estimator == "lmer"){
+          augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$pred[i]]],augData[[idvar]], FUN = aveMean)          
+        }
       } else {
         # First include:
         augData[[UniquePredModel$predID[i]]] <-  ave(augData[[UniquePredModel$pred[i]]],augData[[idvar]],augData[[dayvar]], FUN = function(x)aveLag(x,UniquePredModel$lag[i]))
         
         # Then center:
         ### CENTERING ONLY NEEDED WHEN ESTIMATOR != JAGS ###
-        if (!estimator %in% c("stan","JAGS")){
+        if (!estimator %in% c("JAGS")){
           augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], FUN = aveCenter) 
         } 
       }
@@ -257,8 +325,11 @@ mlVAR <- function(
   
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
-    Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, betweenSubjects=betweenSubjects,temporal=temporal)
-  # } else if (estimator == "least-squares"){
+    Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal)
+  # } else if (estimator == "stan"){
+    # Res <- stan_mlVAR(PredModel,augData,idvar,verbose=verbose,temporal=temporal,nCores=nCores,...)    
+  
+    # } else if (estimator == "least-squares"){
     # Res <- leastSquares_mlVAR(PredModel,augData,idvar,orthogonal = orthogonal, verbose=verbose, betweenSubjects=betweenSubjects)
 #   } else if (estimator == "JAGS"){
 #     Res <- JAGS_mlVAR(augData, vars, 
