@@ -11,6 +11,16 @@ BetatoArray <- function(x, mod, out){
   y
 }
 
+forcePositive <- function(x){
+  x <- (x + t(x))/2
+  if (any(eigen(x)$values < 0)){
+    return(x - (diag(nrow(x)) * min(eigen(x)$values)-0.001))    
+  } else {
+    return(x)
+  }
+
+}
+
 lmer_mlVAR <- 
   function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",...){
 
@@ -132,7 +142,7 @@ lmer_mlVAR <-
     # Average:
     inv <- (inv + t(inv))/2
     # Force positive/definite:
-    inv <- inv - diag(nrow(inv)) * min(min(eigen(inv)$values),0)
+    inv <- forcePositive(inv) # - diag(nrow(inv)) * min(min(eigen(inv)$values),0)
   
     # invert:
     mu_cov <- corpcor::pseudoinverse(inv)
@@ -300,7 +310,7 @@ lmer_mlVAR <-
       ### Compute Theta ####
       Theta_obtained <- matrix(NA, nVar, nVar)
       # diag(Theta_obtained)  <- sapply(lmerResults, lme4::sigma)^2
-      diag(Theta_obtained)  <- sapply(lmerResults, stats::sigma)^2
+      diag(Theta_obtained)  <- sapply(lmerResults, sigma)^2
       
       if (contemporaneous == "unique"){
         # Compute observed residuals covariances:
@@ -391,13 +401,14 @@ lmer_mlVAR <-
       rownames(Gamma_Theta_P) <- Outcomes
       
       # Error variances:
-      D <- diag(1/sapply(lmerResults2,stats::sigma)^2)
+      D <- diag(1/sapply(lmerResults2,sigma)^2)
 
       # Inverse estimate:
       inv <- D %*% (diag(length(Outcomes)) - Gamma_Theta_fixed)
       
       # Average:
       inv <- (inv + t(inv))/2
+      inv <- forcePositive(inv)
       
       # invert:
       Theta_fixed_cov <- corpcor::pseudoinverse(inv)
@@ -416,9 +427,9 @@ lmer_mlVAR <-
           res
         }))
   
-        Theta_subject_prec[[p]] <- D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]])
+        Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
         Theta_subject_cov[[p]] <- corpcor::pseudoinverse(Theta_subject_prec[[p]])
-        Theta_subject_cor[[p]] <- cov2cor(Theta_subject_cov[[p]]) 
+        Theta_subject_cor[[p]] <- cov2cor(forcePositive(Theta_subject_cov[[p]]))
       }
 
       

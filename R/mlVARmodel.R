@@ -27,7 +27,21 @@ mlVARsim <- function(
   # 1. Generate structures:
   # Generate Omega:
 
-  Omega <- genPositiveDefMat(nNode + nTemporal, "onion", rangeVar = c(1,1))$Sigma
+  # Simulate mu means:
+  Omega_mu <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+  # Simulate temporal:
+  Omega_Beta <- genPositiveDefMat(nTemporal, "onion", rangeVar = c(1,1))$Sigma
+  
+#   mat <- Omega_mu
+#   diag(mat) <- 0
+#   rowSums(mat)
+#   
+  Omega <- rbind(
+    cbind(Omega_mu, matrix(0,nNode,nTemporal)),
+    cbind(matrix(0,nTemporal,nNode), Omega_Beta)
+  )
+
+  # Omega <- genPositiveDefMat(nNode + nTemporal, "onion", rangeVar = c(1,1))$Sigma
   
   # Generate SD and scale:
   SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nNode)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nNode)))
