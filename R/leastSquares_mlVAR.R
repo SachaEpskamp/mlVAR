@@ -1,5 +1,5 @@
 leastSquares_mlVAR <- 
-  function(model,augData,idvar,orthogonal = FALSE, betweenSubjects = "posthoc", verbose=TRUE,...){
+  function(model,augData,idvar,contemporaneous = "unique", verbose=TRUE,...){
     
     # Global dummies:
     type <- NULL

@@ -42,9 +42,9 @@ mlVAR <- function(
   
   # Estimation options:
   # orthogonal, # TRUE or FALSE for orthogonal edges. Defaults to nvar < 6
-  estimator = c("lmer"), # Add more? estimator = "least-squares" IGNORES multi-level
-  contemporaneous = c("unique","correlated","orthogonal","fixed","default"), # IF NOT FIXED: 2-step estimation method (lmer again on residuals)
-  temporal = c("default", "correlated","orthogonal","fixed"), # Unique = multi-level!
+  estimator = c("default","lmer","lm"), # Add more? estimator = "least-squares" IGNORES multi-level
+  contemporaneous = c("default","correlated","orthogonal","fixed","unique"), # IF NOT FIXED: 2-step estimation method (lmer again on residuals)
+  temporal = c("default", "correlated","orthogonal","fixed","unique"), # Unique = multi-level!
   # betweenSubjects = c("default","GGM","posthoc"), # Should covariances between means be estimated posthoc or as a GGM? Only used when method = "univariate"
   
   # Misc:
@@ -97,9 +97,7 @@ mlVAR <- function(
     warning(paste0("'orthogonal' argument is deprecated Setting temporal = '",temporal,"'"))
   }
 #   
-#   if (contemporaneous == "default"){
-#     contemporaneous <- ifelse(estimator == "least-squares", "unique", "shared")
-#   }
+
 #   if (betweenSubjects != "default"){
 #     if (estimator != "lmer"){
 #       warning("'betweenSubjects' argument not used in estimator.")
@@ -141,26 +139,55 @@ mlVAR <- function(
   }
   
   # Set orthogonal:
+  if (estimator == "default"){
+    if (temporal == "unique"){
+      estimator <- "lm"
+    } else {
+      estimator <- "lmer"
+    }
+    if (verbose) {
+      message(paste0("'estimator' argument set to '",estimator,"'"))
+    }
+  }
+  
   if (temporal == "default"){
     if (length(vars) > 6){
       
-      if (verbose) message("More than 6 nodes, correlations between temporal random effects are set to zero (temporal = 'orthogonal')")
       temporal <- "orthogonal"
       
     } else {
       temporal <- "correlated"
-    }    
+    }  
+    if (verbose) {
+      message(paste0("'temporal' argument set to '",temporal,"'"))
+    }
   }
   
   if (contemporaneous == "default"){
     if (length(vars) > 6){
       
-      if (verbose) message("More than 6 nodes, correlations between contemporaneous random effects are set to zero (contemporaneous = 'orthogonal')")
       contemporaneous <- "orthogonal"
       
     } else {
       contemporaneous <- "correlated"
-    }    
+    }  
+    
+    if (verbose) {
+      message(paste0("'contemporaneous' argument set to '",contemporaneous,"'"))
+    }
+  }
+  
+  ### Check input ###
+  if (estimator == "lmer"){
+    if (temporal %in% c("unique")){
+      stop("'lmer' estimator does not support temporal = 'unique'")
+    }
+  }
+  
+  if (estimator == "lm"){
+    if (!temporal %in% c("unique")){
+      stop("'lm' estimator only supports temporal = 'unique'")
+    }
   }
   
   # CompareToLags:
@@ -329,8 +356,8 @@ mlVAR <- function(
   # } else if (estimator == "stan"){
     # Res <- stan_mlVAR(PredModel,augData,idvar,verbose=verbose,temporal=temporal,nCores=nCores,...)    
   
-    # } else if (estimator == "least-squares"){
-    # Res <- leastSquares_mlVAR(PredModel,augData,idvar,orthogonal = orthogonal, verbose=verbose, betweenSubjects=betweenSubjects)
+    } else if (estimator == "lm"){
+    Res <- lm_mlVAR(PredModel,augData,idvar,temporal=temporal,contemporaneous=contemporaneous, verbose=verbose)
 #   } else if (estimator == "JAGS"){
 #     Res <- JAGS_mlVAR(augData, vars, 
 #                       idvar,

@@ -107,6 +107,10 @@ summary.mlVAR <- function(
     cor <- object$results$Omega_mu$cor$mean
     pcor <- object$results$Omega_mu$pcor$mean
     UT <- upper.tri(cor)
+  
+    if (is.null(P)){
+      P <- matrix(NA,nrow(cor),ncol(cor))
+    }
     
     
     cat("\n\nBetween-subject effects:\n")
@@ -133,7 +137,7 @@ summary.mlVAR <- function(
 }
 
 
-
+makeSym <- function(x) (x + t(x))/2
 
 
 getNet <- function(x,...){
@@ -281,6 +285,7 @@ plot.mlVAR <-
           warning("Can not hide non-significant edges for subject network.")
         }
       }
+      NET <- makeSym(NET)
     }
     
     # Contemporaneous:
@@ -316,7 +321,7 @@ plot.mlVAR <-
         SIG <-  x$results$Omega_mu[[sub]]$P < alpha
       }
       
-      
+      NET <- makeSym(NET)
     }
     
     ### PLOT NETWORK ###

@@ -425,18 +425,17 @@ lmer_mlVAR <-
       Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <- list()
       
       for (p in 1:nrow(ranef(lmerResults2[[1]])[[idvar]])){
-        Gamma_Theta_subject[[p]] <- do.call(rbind,lapply(seq_along(lmerResults2),function(i){
+        Gamma_Theta_subject[[p]] <- Gamma_Theta_fixed +  do.call(rbind,lapply(seq_along(lmerResults2),function(i){
           res <- rep(0,nVar)
           res[-i] <- unlist(ranef(lmerResults2[[i]])[[idvar]][p,])
           res
         }))
   
         Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
-        Theta_subject_cov[[p]] <- corpcor::pseudoinverse(Theta_subject_prec[[p]])
-        Theta_subject_cor[[p]] <- cov2cor(forcePositive(Theta_subject_cov[[p]]))
+        Theta_subject_cov[[p]] <- forcePositive(corpcor::pseudoinverse(Theta_subject_prec[[p]]))
+        Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
       }
 
-      
       ### Store results:
       Results[["Theta"]] <- modelCov(
         cor = modelArray(mean=cov2cor(Theta_fixed_cov),subject = Theta_subject_cor),

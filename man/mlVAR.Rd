@@ -8,8 +8,10 @@ Multilevel VAR Estimation for Multiple Time Series
 The function \code{mlVAR0} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
 }
 \usage{
-mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar, estimator = c("lmer"), 
-    temporal = c("default", "correlated", "orthogonal", "fixed"),  verbose = TRUE, 
+mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar, estimator =  c("default","lmer","lm"), 
+    temporal = c("default", "correlated", "orthogonal", "fixed"), 
+    contemporaneous = c("default","correlated","orthogonal","fixed","unique"),
+    verbose = TRUE, 
     compareToLags, orthogonal)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -37,7 +39,10 @@ String indicating assessment beep per day (if missing, is added). Adding this ar
 The estimator to be used. Currently only \code{"lmer"} is supported.
 }
   \item{temporal}{
-How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise.
+How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise. \code{"unique"} uses \code{lm} to estimate an unique model for each subject.
+}
+\item{contemporaneous}{
+How should the contemporaneous effects be estimated? \code{"fixed"} or \code{"unique"} will correlate the residuals after controling for temporal effects, and \code{"orthogonal"} or \code{"correlated"} will run a multi-level model to estimate a Gaussian Graphical model.
 }
   \item{verbose}{
 Logical indicating if console messages and the progress bar should be shown.
