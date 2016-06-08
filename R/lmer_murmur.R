@@ -332,7 +332,11 @@ lmer_mlVAR <-
         D <- sqrt(diag(diag(Theta_obtained)))
         Theta_fixed <- D %*% cov2cor(Theta_fixed_posthoc) %*% D
         
-        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed))
+        Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
+          Theta_fixed
+        })
+        
+        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
       }
 
     } else {
