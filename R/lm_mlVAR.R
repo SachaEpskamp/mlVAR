@@ -107,7 +107,7 @@ lm_mlVAR <-
       } else {
         Theta <- forcePositive(cov(Resids[, Outcomes],use="pairwise.complete.obs"))
         colnames(Theta) <- rownames(Theta) <- Outcomes
-        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta))
+        Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta,subject=lapply(seq_along(IDs),function(x)Theta)))
       }
       
     } else {
