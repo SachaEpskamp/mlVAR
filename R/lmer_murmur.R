@@ -247,10 +247,6 @@ lmer_mlVAR <-
     
     
     
-    #     } else {
-    #       browser()
-    #     }
-    
     # Now reorder everything to array:
     
     
@@ -297,9 +293,9 @@ lmer_mlVAR <-
     resids <- lapply(seq_along(Outcomes),
                      function(i){
                        resid <- residuals(lmerResults[[i]])
-                       id <- as.numeric(names(resid))
+                       id <- names(resid)
                        df <- data.frame(foo = resid, id = id)
-                       left_join(data.frame(id = seq_len(nrow(augData))), df, by = "id")[,2]
+                       left_join(data.frame(id =  rownames(augData)), df, by = "id")[,2]
                      })
     resid <- as.data.frame(do.call(cbind,resids))
     names(resid) <- Outcomes
