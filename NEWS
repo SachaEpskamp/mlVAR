@@ -1,3 +1,9 @@
+Changes in version 0.3.1
+  o The 'partial' argument in 'plot.mlVAR' now defaults to TRUE
+  o Added 'contemporaneous' argument to mlVAR
+  o Added 'lm' estimator for fitting unique VAR models per subject
+  o Added 'rule' argument to plot.mlVAR to set the rule of choosing significance in nodewise GGM estimation
+
 Changes in version 0.3
   o Complete rework of package! 
     o mlVAR, mlVARsim, and relevant methods have been completely rewritten

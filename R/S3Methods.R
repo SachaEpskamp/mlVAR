@@ -107,7 +107,7 @@ summary.mlVAR <- function(
     cor <- object$results$Omega_mu$cor$mean
     pcor <- object$results$Omega_mu$pcor$mean
     UT <- upper.tri(cor)
-  
+    
     if (is.null(P)){
       P <- matrix(NA,nrow(cor),ncol(cor))
     }
@@ -155,16 +155,18 @@ plot.mlVAR <-
   function(x, # mlVAR object
            type = c("temporal","contemporaneous","between"), # # also allows for partial matching. e.g., temp or t.
            lag = 1, # lag of temporal network
-           partial = FALSE, # Show partial correlations?
+           partial = TRUE, # Show partial correlations?
            SD = FALSE, # Plots SD instead of normal parameters
            subject, # If assigned, show the network of a particulair subject instead
            order, # If assigned, re-order nodes
            nonsig = c("show","dashed","hide"), # How to handle nonsignificant edges? In Bayesian estimation, checks if 0 is inside interval.
+           rule = c("or","and"), # GGM sig rule
            alpha = 0.05, # alpha value for significance test
            onlySig = FALSE, # Backward competability argument.
            layout = "spring",
            ...  #Arguments sent to qgraph
   ){
+    rule <- match.arg(rule)
     
     # First some backward competability:
     if (type[[1]] == "fixed"){
@@ -261,21 +263,58 @@ plot.mlVAR <-
         
         # Attempt to obtain significance:
         # Via P:
-        if (!SD && any(is.na(x$results$Theta[[sub]]$P))){
+
+        # If nonsig is not show:
+        if (nonsig != "show"){
           
-          # Via CI:
+          # Stop if SD:
+          if (SD){
+            stop("No significance for SD")
+          }
+          
+          # Not partial:
           if (!any(is.na(x$results$Theta[[sub]]$lower)) && !any(is.na(x$results$Theta[[sub]]$upper))){
             SIG <- x$results$Theta[[sub]]$lower > 0 |  x$results$Theta[[sub]]$upper < 0
+          } else if (!any(is.na(x$results$Theta[[sub]]$P))){
+            SIG <-  x$results$Theta[[sub]]$P < alpha
           } else {
-            # No P or CI:
-            SIG <- matrix(TRUE, nrow(NET), ncol(NET))
-            if (nonsig != "show"){
-              warning("No p-values or CI computed. Can not hide non-significant edges.")
+            
+            # If partial, try via gamma:
+            if (partial && !is.null(x$results$Gamma_Theta) && !all(is.nan(x$results$Gamma_Theta$P))){
+              diag(x$results$Gamma_Theta$P) <- 0
+              
+              if (rule == "or"){
+                SIG <- x$results$Gamma_Theta$P < alpha | t(x$results$Gamma_Theta$P ) < alpha
+              } else {
+                SIG <- x$results$Gamma_Theta$P < alpha & t(x$results$Gamma_Theta$P ) < alpha
+              }
+            } else {
+              # No P or CI:
+              SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+              if (nonsig != "show"){
+                stop("No p-values or CI computed. Can not hide non-significant edges.")
+              }              
             }
           }
         } else {
-          SIG <-  x$results$Theta[[sub]]$P < alpha
+          SIG <- matrix(TRUE, nrow(NET), ncol(NET))
         }
+        
+#         if (!SD && any(is.na(x$results$Theta[[sub]]$P))){
+#           
+#           # Via CI:
+#           if (!any(is.na(x$results$Theta[[sub]]$lower)) && !any(is.na(x$results$Theta[[sub]]$upper))){
+#             SIG <- x$results$Theta[[sub]]$lower > 0 |  x$results$Theta[[sub]]$upper < 0
+#           } else {
+#             # No P or CI:
+#             SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+#             if (nonsig != "show"){
+#               warning("No p-values or CI computed. Can not hide non-significant edges.")
+#             }
+#           }
+#         } else {
+#           SIG <-  x$results$Theta[[sub]]$P < alpha
+#         }
         
       } else {
         # Obtain subject network:
@@ -288,7 +327,7 @@ plot.mlVAR <-
       NET <- makeSym(NET)
     }
     
-    # Contemporaneous:
+    # Between-subjects:
     if (type == "between"){
       
       sub <- ifelse(partial,"pcor","cor")
@@ -303,22 +342,59 @@ plot.mlVAR <-
       # Obtain fixed effects network:
       NET <- x$results$Omega_mu[[sub]]$mean
       
-      # Attempt to obtain significance:
-      # Via P:
-      if (any(is.na(x$results$Omega_mu[[sub]]$P))){
+#       # Attempt to obtain significance:
+#       # Via P:
+#       if (any(is.na(x$results$Omega_mu[[sub]]$P))){
+#         
+#         # Via CI:
+#         if (!any(is.na(x$results$Omega_mu[[sub]]$lower)) && !any(is.na(x$results$Omega_mu[[sub]]$upper))){
+#           SIG <- x$results$Omega_mu[[sub]]$lower > 0 |  x$results$Omega_mu[[sub]]$upper < 0
+#         } else {
+#           # No P or CI:
+#           SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+#           if (nonsig != "show"){
+#             warning("No p-values or CI computed. Can not hide non-significant edges.")
+#           }
+#         }
+#       } else {
+#         SIG <-  x$results$Omega_mu[[sub]]$P < alpha
+#       }
+#       
+      
+      # If nonsig is not show:
+      if (nonsig != "show"){
         
-        # Via CI:
+        # Stop if SD:
+        if (SD){
+          stop("No significance for SD")
+        }
+        
+        # Not partial:
         if (!any(is.na(x$results$Omega_mu[[sub]]$lower)) && !any(is.na(x$results$Omega_mu[[sub]]$upper))){
           SIG <- x$results$Omega_mu[[sub]]$lower > 0 |  x$results$Omega_mu[[sub]]$upper < 0
+        } else if (!any(is.na(x$results$Omega_mu[[sub]]$P))){
+          SIG <-  x$results$Omega_mu[[sub]]$P < alpha
         } else {
-          # No P or CI:
-          SIG <- matrix(TRUE, nrow(NET), ncol(NET))
-          if (nonsig != "show"){
-            warning("No p-values or CI computed. Can not hide non-significant edges.")
+          
+          # If partial, try via gamma:
+          if (partial && !is.null(x$results$Gamma_Omega_mu) && !all(is.nan(x$results$Gamma_Omega_mu$P))){
+            diag(x$results$Gamma_Omega_mu$P) <- 0
+            
+            if (rule == "or"){
+              SIG <- x$results$Gamma_Omega_mu$P < alpha | t(x$results$Gamma_Omega_mu$P ) < alpha
+            } else {
+              SIG <- x$results$Gamma_Omega_mu$P < alpha & t(x$results$Gamma_Omega_mu$P ) < alpha
+            }
+          } else {
+            # No P or CI:
+            SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+            if (nonsig != "show"){
+              stop("No p-values or CI computed. Can not hide non-significant edges.")
+            }              
           }
         }
       } else {
-        SIG <-  x$results$Omega_mu[[sub]]$P < alpha
+        SIG <- matrix(TRUE, nrow(NET), ncol(NET))
       }
       
       NET <- makeSym(NET)

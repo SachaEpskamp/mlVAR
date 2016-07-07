@@ -1,3 +1,47 @@
+
+# Graph simulator:
+simGraph <- function(
+  Nvar,
+  sparsity = 0.5,
+  parRange = c(0.5,1),
+  constant = 1.5,
+  propPositive = 0.5
+){
+  ## Approach from 
+  # Yin, J., & Li, H. (2011). A sparse conditional gaussian graphical model for analysis of genetical genomics data. The annals of applied statistics, 5(4), 2630.
+  
+  # Empty matrix:
+  trueKappa <- matrix(0,Nvar,Nvar)
+  
+  # Total edges:
+  totEdges <- sum(upper.tri(trueKappa))
+  
+  # Included edges:
+  nEdges <- round((1-sparsity)*totEdges)
+  
+  # Sample the edges:
+  inclEdges <- sample(seq_len(totEdges),nEdges)
+  
+  # Make edges:
+  trueKappa[upper.tri(trueKappa)][inclEdges] <- 1
+  
+  # Make edges negative and add weights:
+  trueKappa[upper.tri(trueKappa)] <- trueKappa[upper.tri(trueKappa)] * sample(c(-1,1),sum(upper.tri(trueKappa)),TRUE,prob=c(propPositive,1-propPositive)) * 
+    runif(sum(upper.tri(trueKappa)), min(parRange ),max(parRange ))
+  
+  # Symmetrize:
+  trueKappa[lower.tri(trueKappa)] <- t(trueKappa)[lower.tri(trueKappa)]  
+  
+  # Make pos def:
+  diag(trueKappa) <- constant * rowSums(abs(trueKappa))
+  diag(trueKappa) <- ifelse(diag(trueKappa)==0,1,diag(trueKappa))
+  trueKappa <- trueKappa/diag(trueKappa)[row(trueKappa)]
+  trueKappa <- (trueKappa + t(trueKappa)) / 2
+  
+  return(as.matrix(qgraph::wi2net(trueKappa)))
+}
+
+
 # 1. fixed effects (means) for every parameter and a variance-covariance matrix.
 # 2. Generate Beta's 
 # 3. Shrink all beta's untill all eigens are in unit circle.
@@ -11,6 +55,9 @@ mlVARsim <- function(
   lag = 1,
   
   # Arguments for parameters:
+  # contemporaneous = c("wishart","fixedGGM","randomGGM"),
+  # between = c("wishart","GGM"),
+  thetaVar = rep(1,nNode),
   DF_theta = nNode*2,
   mu_SD = c(1,1),
   init_beta_SD = c(0.1,1),
@@ -18,6 +65,10 @@ mlVARsim <- function(
   shrink_fixed = 0.9,
   shrink_deviation = 0.9
 ){
+  contemporaneous <- "wishart"
+  # contemporaneous <- match.arg(contemporaneous)
+  GGMsparsity = 0.5
+  
   if (length(nTime)==1){
     nTime <- rep(nTime,nPerson)
   }
@@ -48,15 +99,38 @@ mlVARsim <- function(
   Omega <- diag(SD) %*%Omega %*% diag(SD)
 
   # Generate fixed contemporaneous:
-  Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+  if (contemporaneous=="wishart"){
+    Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+    Theta_fixed <- diag(sqrt(thetaVar)) %*% Theta_fixed %*% diag(sqrt(thetaVar))
+    
+    # 2. Generate residual covariance matrices:
+    Theta <- rWishart(nPerson, DF_theta, Theta_fixed/DF_theta)
+  } else {
+
+    if (contemporaneous == "randomGGM"){
+      Theta <- lapply(1:nPerson,function(x){
+        net <- simGraph(nNode,GGMsparsity)
+        cov2cor(solve(diag(nNode) - net))
+      })
+      Theta <- do.call(abind,c(Theta,along=3))
+     
+      Theta_fixed <- apply(Theta,1:2,mean)
+    } else {
+      net <- simGraph(nNode,GGMsparsity)
+      Theta_fixed <- cov2cor(solve(diag(nNode) - net))
+      Theta <- lapply(1:nPerson,function(x)Theta_fixed)
+      Theta <- do.call(abind,c(Theta,along=3))
+    }
+  }
+ 
+  
   
   # Generate fixed means:
   mu_fixed <- rnorm(nNode,0,fixedMuSD)
   # Generate fixed betas:
   beta_fixed <- rnorm(nTemporal,0)
 
-  # 2. Generate residual covariance matrices:
-  Theta <- rWishart(nPerson, DF_theta, Theta_fixed/DF_theta)
+  
   
   # 3. Generate random parameter sets:
   if (lag > 0){

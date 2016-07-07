@@ -1,12 +1,12 @@
 Package: mlVAR
 Type: Package
 Title: Multi-Level Vector Autoregression
-Version: 0.3.0
+Version: 0.3.1
 Depends: R (>= 3.0.0)
 Imports: lme4,  arm, qgraph, dplyr, clusterGeneration, mvtnorm, corpcor, plyr, abind, methods
 Author: Sacha Epskamp, Marie K. Deserno and Laura F. Bringmann
 Maintainer: Sacha Epskamp <mail@sachaepskamp.com>
-Description: Compute estimates of the multivariate vector autoregression model as 
-             introduced by Bringmann et al. (2013) which can be extended through treatment effects, 
-             covariates and pre- and post-assessment effects. 
+Description: Estimates the multi-level vector autoregression model on time-series data.
+             Three network structures are obtained: temporal networks, contemporaneous
+             networks and between-subjects networks.
 License: GPL-2

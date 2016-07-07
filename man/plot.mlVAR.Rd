@@ -10,8 +10,8 @@
 }
 \usage{
   \method{plot}{mlVAR}(x, type = c("temporal", "contemporaneous", "between"), lag = 1, 
-      partial = FALSE, SD = FALSE, subject, order, nonsig = c("show", "dashed", "hide"), 
-      alpha = 0.05, onlySig = FALSE, layout = "spring", ...)
+      partial = TRUE, SD = FALSE, subject, order, nonsig = c("show", "dashed", "hide"), 
+      rule = c("or","and"), alpha = 0.05, onlySig = FALSE, layout = "spring", ...)
   \method{plot}{mlVARsim}(x, ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -26,8 +26,7 @@ What network to plot?
 The lag to use when \code{type = "temporal"}
 }
   \item{partial}{
-Logical, should partial correlation matrices be plotted instead of correlation methods? Only
-used if \code{type} is \code{"contemporaneous"} or \code{"between"}
+Logical, should partial correlation matrices be plotted instead of correlation methods? Only used if \code{type} is \code{"contemporaneous"} or \code{"between"}. Defaults to \code{TRUE}.
 }
   \item{SD}{
 Logical. Plot the standard-deviation of random effects instead of the fixed effect estimate?
@@ -40,6 +39,9 @@ An optional character vector used to set the order of nodes in the network.
 }
   \item{nonsig}{
 How to handle non-significant edges? 
+}
+\item{rule}{
+How to choose significance in node-wise estimated GGMs (contemporaneous and between-subjects). \code{"or"} selects an edge as being significant if one node predicting the other is significant, and \code{"and"} requires both predictions to be significant.
 }
   \item{alpha}{
 Alpha level to test for significance

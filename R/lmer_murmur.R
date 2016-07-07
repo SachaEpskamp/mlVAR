@@ -253,7 +253,6 @@ lmer_mlVAR <-
     
       
     # Using least-squares:
-    # IDs of beta:
 #     betaIDs <- as.numeric(rownames(ranef(lmerResults[[1]])[[idvar]]))
 #     
     #     Theta_LeastSquares <- lapply(seq_along(betaIDs),function(i){

@@ -35,7 +35,7 @@ lm_mlVAR <-
           sub <- augData[augData[[idvar]] == IDs[p],]
           ff <- as.formula(paste(Outcomes[i],"~",paste(predID,collapse = " + ")))
           
-          lmResults[[i]][[p]] <- lm(ff, sub)
+          lmResults[[i]][[p]] <- stats::lm(ff, sub)
         }
 #         
 #       } else {
@@ -53,7 +53,7 @@ lm_mlVAR <-
     
     
     # Obtain coefficients::
-    Coefs <- lapply(lmResults,lapply,coef)
+    Coefs <- lapply(lmResults,lapply,stats::coef)
     
     # Reorder coefs to per subject:
     Coefs <- lapply(seq_along(IDs),function(i){
@@ -83,7 +83,7 @@ lm_mlVAR <-
     Resids <- do.call(rbind,lapply(seq_along(IDs),function(id){
       mat <- cbind(
         do.call(cbind,lapply(seq_along(lmResults),function(i){
-          resid(lmResults[[i]][[id]])
+          stats::resid(lmResults[[i]][[id]])
         })),
         IDs[[id]]
       )

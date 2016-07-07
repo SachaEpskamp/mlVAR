@@ -8,9 +8,9 @@ Simulates an mlVAR model and data
 Simulates an mlVAR model and data with a random variance-covariance matrix for the random effects.
 }
 \usage{
-mlVARsim(nPerson = 10, nNode = 5, nTime = 100, lag = 1, DF_theta = nNode * 2, 
-mu_SD = c(1, 1), init_beta_SD = c(0.1, 1), fixedMuSD = 1, shrink_fixed = 0.9, 
-shrink_deviation = 0.9)
+mlVARsim(nPerson = 10, nNode = 5, nTime = 100, lag = 1, thetaVar = rep(1,nNode),
+DF_theta = nNode * 2, mu_SD = c(1, 1), init_beta_SD = c(0.1, 1), fixedMuSD = 1, 
+shrink_fixed = 0.9, shrink_deviation = 0.9)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,6 +25,9 @@ Number of observations per person
 }
   \item{lag}{
 The maximum lag to be used
+}
+\item{thetaVar}{
+  Contemporaneous fixed effect variances
 }
   \item{DF_theta}{
 Degrees of freedom in simulating person-specific contemporaneous covariances (e.g., the individual differences in contemporaneous effects)

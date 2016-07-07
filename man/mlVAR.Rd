@@ -8,11 +8,11 @@ Multilevel VAR Estimation for Multiple Time Series
 The function \code{mlVAR0} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
 }
 \usage{
-mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar, estimator =  c("default","lmer","lm"), 
-    temporal = c("default", "correlated", "orthogonal", "fixed"), 
+mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar, 
+    estimator =  c("default","lmer","lm"), 
     contemporaneous = c("default","correlated","orthogonal","fixed","unique"),
-    verbose = TRUE, 
-    compareToLags, orthogonal)
+    temporal = c("default", "correlated", "orthogonal", "fixed", "unique"),
+    verbose = TRUE, compareToLags, scale = TRUE, orthogonal)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,15 +38,16 @@ String indicating assessment beep per day (if missing, is added). Adding this ar
   \item{estimator}{
 The estimator to be used. Currently only \code{"lmer"} is supported.
 }
+\item{contemporaneous}{
+  How should the contemporaneous networks be estimated? These networks are always estimated post-hoc by investigating the residuals of the temporal models. \code{"correlated"} and \code{"orthogonal"} run second multi-level models in which the networks are estimated using node-wise estimation. \code{"fixed"} and \code{"unique"} simply correlate the residuals, either by computing one network for all subjects (fixed) or a single network per per subject.
+}
   \item{temporal}{
 How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise. \code{"unique"} uses \code{lm} to estimate an unique model for each subject.
-}
-\item{contemporaneous}{
-How should the contemporaneous effects be estimated? \code{"fixed"} or \code{"unique"} will correlate the residuals after controling for temporal effects, and \code{"orthogonal"} or \code{"correlated"} will run a multi-level model to estimate a Gaussian Graphical model.
 }
   \item{verbose}{
 Logical indicating if console messages and the progress bar should be shown.
 }
+\item{scale}{Logical, should variables be standardized before estimation?}
   \item{compareToLags}{
 A vector indicating which lags to base the data on. If the model is to be compared with a model with multiple lags using \code{\link{mlVARcompare}}, this argument must be used to make sure the number of observations is the same in both models (e.g., a lag 1 model can model the second observation of a day and a lag-2 model can't, causing different number of observations and incomparable models). It is suggested to not use this argument unless you want to compare models, and always run \code{mlVAR} without using this argument afterwards in the selected model.
 }
@@ -97,16 +98,15 @@ plot(fit1, "temporal", title = "Estimated temporal relationships", layout = "cir
 # Compare contemporaneous partial correlations:
 layout(t(1:2))
 plot(Model, "contemporaneous", title = "True contemporaneous relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 plot(fit1, "contemporaneous", title = "Estimated contemporaneous relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 
 # Compare between-subjects partial correlations:
 layout(t(1:2))
-plot(Model, "between", title = "True between-subjects relationships", layout = "circle", 
-    partial = TRUE)
+plot(Model, "between", title = "True between-subjects relationships", layout = "circle")
 plot(fit1, "between", title = "Estimated between-subjects relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 
 # Run same model with non-correlated temporal relationships and fixed-effect model:
 fit2 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
@@ -142,16 +142,15 @@ plot(fit4, "temporal", title = "Estimated temporal relationships", layout = "cir
 # Compare contemporaneous partial correlations:
 layout(t(1:2))
 plot(Model, "contemporaneous", title = "True contemporaneous relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 plot(fit4, "contemporaneous", title = "Estimated contemporaneous relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 
 # Compare between-subjects partial correlations:
 layout(t(1:2))
-plot(Model, "between", title = "True between-subjects relationships", layout = "circle", 
-    partial = TRUE)
+plot(Model, "between", title = "True between-subjects relationships", layout = "circle")
 plot(fit4, "between", title = "Estimated between-subjects relationships", 
-    layout = "circle", partial = TRUE)
+    layout = "circle")
 }
 }
 
