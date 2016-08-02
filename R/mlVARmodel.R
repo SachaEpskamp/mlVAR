@@ -132,7 +132,8 @@ mlVARsim <- function(
   mu_fixed <- rnorm(nNode,0,fixedMuSD)
   # Generate fixed betas:
   beta_fixed <- rnorm(nTemporal,0)
-
+  # set weakest 50% to zero:
+  beta_fixed[order(abs(beta_fixed))[1:round(nTemporal/2)]] <- 0
   
   
   # 3. Generate random parameter sets:
