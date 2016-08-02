@@ -159,8 +159,8 @@ plot.mlVAR <-
            SD = FALSE, # Plots SD instead of normal parameters
            subject, # If assigned, show the network of a particulair subject instead
            order, # If assigned, re-order nodes
-           nonsig = c("show","dashed","hide"), # How to handle nonsignificant edges? In Bayesian estimation, checks if 0 is inside interval.
-           rule = c("and", "or"), # GGM sig rule
+           nonsig = c("hide","show","dashed"), # How to handle nonsignificant edges? In Bayesian estimation, checks if 0 is inside interval.
+           rule = c("or", "and"), # GGM sig rule
            alpha = 0.05, # alpha value for significance test
            onlySig = FALSE, # Backward competability argument.
            layout = "spring",
