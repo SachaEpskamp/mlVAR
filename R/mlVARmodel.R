@@ -4,7 +4,7 @@ simGraph <- function(
   Nvar,
   sparsity = 0.5,
   parRange = c(0.5,1),
-  constant = 1.5,
+  constant = 1.1,
   propPositive = 0.5
 ){
   ## Approach from 
@@ -79,9 +79,11 @@ mlVARsim <- function(
   # Generate Omega:
 
   # Simulate mu means:
-  Omega_mu <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+  Omega_mu <- cov2cor(solve(diag(nNode)-simGraph(nNode)))
+  # Omega_mu <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
   # Simulate temporal:
-  Omega_Beta <- genPositiveDefMat(nTemporal, "onion", rangeVar = c(1,1))$Sigma
+  # Omega_Beta <- genPositiveDefMat(nTemporal, "onion", rangeVar = c(1,1))$Sigma
+  Omega_Beta <- cov2cor(solve(diag(nTemporal)-simGraph(nTemporal)))
   
 #   mat <- Omega_mu
 #   diag(mat) <- 0
@@ -100,7 +102,8 @@ mlVARsim <- function(
 
   # Generate fixed contemporaneous:
   if (contemporaneous=="wishart"){
-    Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+    # Theta_fixed <- genPositiveDefMat(nNode, "onion", rangeVar = c(1,1))$Sigma
+    Theta_fixed <- cov2cor(solve(diag(nNode)-simGraph(nNode)))
     Theta_fixed <- diag(sqrt(thetaVar)) %*% Theta_fixed %*% diag(sqrt(thetaVar))
     
     # 2. Generate residual covariance matrices:
