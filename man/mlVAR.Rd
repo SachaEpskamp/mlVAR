@@ -12,7 +12,8 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
     estimator =  c("default","lmer","lm"), 
     contemporaneous = c("default","correlated","orthogonal","fixed","unique"),
     temporal = c("default", "correlated", "orthogonal", "fixed", "unique"),
-    verbose = TRUE, compareToLags, scale = TRUE, orthogonal)
+    verbose = TRUE, compareToLags, scale = TRUE, scaleWithin = FALSE,
+    orthogonal)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -48,6 +49,7 @@ How should the temporal effects be estimated? \code{"correlated"} estimates corr
 Logical indicating if console messages and the progress bar should be shown.
 }
 \item{scale}{Logical, should variables be standardized before estimation?}
+\item{scaleWithin}{Logial, should variables be scaled within-person (set to \code{FALSE} to only center within-person)}
   \item{compareToLags}{
 A vector indicating which lags to base the data on. If the model is to be compared with a model with multiple lags using \code{\link{mlVARcompare}}, this argument must be used to make sure the number of observations is the same in both models (e.g., a lag 1 model can model the second observation of a day and a lag-2 model can't, causing different number of observations and incomparable models). It is suggested to not use this argument unless you want to compare models, and always run \code{mlVAR} without using this argument afterwards in the selected model.
 }

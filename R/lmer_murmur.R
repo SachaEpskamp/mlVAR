@@ -18,13 +18,14 @@ forcePositive <- function(x){
   } else {
     return(x)
   }
-
+  
 }
 
 lmer_mlVAR <- 
-  function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",...){
-
-
+  function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",
+           nCores = 1,...){
+    
+    
     
     Outcomes <- unique(model$dep)
     nVar <- length(Outcomes)
@@ -36,50 +37,104 @@ lmer_mlVAR <-
     
     if (verbose){
       message("Estimating temporal and between-subjects effects")
-      pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
+      # pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
     }
     # start nodewise loop:
-    for (i in seq_along(Outcomes)){
-      # submodel:
-      subModel <- model %>% filter_(~ dep == Outcomes[i])
+    
+    
+    if (nCores > 1){
+      # Make clusters:
+      nClust <- nCores - 1
+      cl <- makePSOCKcluster(nClust)
       
-      # Setup model:
-      if (temporal != "fixed"){
-        mod <- paste0(
-          Outcomes[i],
-          " ~ ",
-          paste(subModel$predID,collapse="+"),
-          " + (",
-          paste(subModel$predID[subModel$type == "within"],collapse="+"),
-          ifelse(temporal == "orthogonal","||","|"),
-          idvar,
-          ")"
-        )        
-      } else {
-        mod <- paste0(
-          Outcomes[i],
-          " ~ ",
-          paste(subModel$predID,collapse="+"),
-          " + (1 |", 
-          idvar,
-          ")"
-        )
-      }
+      # Export to cluster:
+      clusterExport(cl, c("Outcomes", "model", "temporal", "contemporaneous", "idvar", "augData"), envir = environment())
       
+      # Run loop:
+      lmerResults <-  parLapply(cl, seq_along(Outcomes), function(i){
+        # submodel:
+        subModel <-  dplyr::filter_(model, ~ dep == Outcomes[i])
+        
+        # Setup model:
+        if (temporal != "fixed"){
+          mod <- paste0(
+            Outcomes[i],
+            " ~ ",
+            paste(subModel$predID,collapse="+"),
+            " + (",
+            paste(subModel$predID[subModel$type == "within"],collapse="+"),
+            ifelse(temporal == "orthogonal","||","|"),
+            idvar,
+            ")"
+          )        
+        } else {
+          mod <- paste0(
+            Outcomes[i],
+            " ~ ",
+            paste(subModel$predID,collapse="+"),
+            " + (1 |", 
+            idvar,
+            ")"
+          )
+        }
+        
+        
+        # Formula:
+        formula <- as.formula(mod)
+        
+        # Run lmer:
+        return(suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...)))
+      })
+
       
-      # Formula:
-      formula <- as.formula(mod)
-      
-      # Run lmer:
-      lmerResults[[i]] <- suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))
-      
+    } else {
       if (verbose){
-        setTxtProgressBar(pb, i)
+        pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
+      }
+      
+      for (i in seq_along(Outcomes)){
+        # submodel:
+        subModel <- model %>% filter_(~ dep == Outcomes[i])
+        
+        # Setup model:
+        if (temporal != "fixed"){
+          mod <- paste0(
+            Outcomes[i],
+            " ~ ",
+            paste(subModel$predID,collapse="+"),
+            " + (",
+            paste(subModel$predID[subModel$type == "within"],collapse="+"),
+            ifelse(temporal == "orthogonal","||","|"),
+            idvar,
+            ")"
+          )        
+        } else {
+          mod <- paste0(
+            Outcomes[i],
+            " ~ ",
+            paste(subModel$predID,collapse="+"),
+            " + (1 |", 
+            idvar,
+            ")"
+          )
+        }
+        
+        
+        # Formula:
+        formula <- as.formula(mod)
+        
+        # Run lmer:
+        lmerResults[[i]] <- suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))
+        
+        if (verbose){
+          setTxtProgressBar(pb, i)
+        }
+      }
+      if (verbose){
+        close(pb)
       }
     }
-    if (verbose){
-      close(pb)
-    }
+    
     
     
     ### Collect the results:
@@ -124,10 +179,10 @@ lmer_mlVAR <-
     # Which predictor codes are the variables:
     modSum <- model %>% filter_(~type == "between") %>% group_by_("pred") %>% dplyr::summarize_(id = ~unique(predID))
     IDs <- modSum$id[match(Outcomes, modSum$pred)]
-   
+    
     # Construct gamma and D:
     Gamma_Omega_mu <- Gamma_Omega_mu_SE <- Gamma_Omega_mu_P <- matrix(0, length(Outcomes), length(Outcomes))
-
+    
     for (i in seq_along(Outcomes)){
       Gamma_Omega_mu[i,-i] <- fixef(lmerResults[[i]])[IDs[-i]] 
       Gamma_Omega_mu_SE[i,-i] <- se.fixef(lmerResults[[i]])[IDs[-i]] 
@@ -143,7 +198,7 @@ lmer_mlVAR <-
     inv <- (inv + t(inv))/2
     # Force positive/definite:
     inv <- forcePositive(inv) # - diag(nrow(inv)) * min(min(eigen(inv)$values),0)
-  
+    
     # invert:
     mu_cov <- corpcor::pseudoinverse(inv)
     mu_prec <- inv
@@ -251,10 +306,10 @@ lmer_mlVAR <-
     
     
     
-      
+    
     # Using least-squares:
-#     betaIDs <- as.numeric(rownames(ranef(lmerResults[[1]])[[idvar]]))
-#     
+    #     betaIDs <- as.numeric(rownames(ranef(lmerResults[[1]])[[idvar]]))
+    #     
     #     Theta_LeastSquares <- lapply(seq_along(betaIDs),function(i){
     #       
     #       id <- betaIDs[i]
@@ -333,7 +388,7 @@ lmer_mlVAR <-
         
         Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
       }
-
+      
     } else {
       ### TWO STEP METHOD ###
       resid[[idvar]] <- augData[[idvar]]
@@ -343,12 +398,15 @@ lmer_mlVAR <-
       
       if (verbose){
         message("Estimating contemporaneous effects")
-        pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
       }
       # start nodewise loop:
-      for (i in seq_along(Outcomes)){
- 
-        # Setup model:
+      if (nCores > 1){
+        clusterExport(cl, c("Outcomes", "model", "temporal", "contemporaneous", "idvar", "resid"), envir = environment())
+        
+        # Run loop:
+        lmerResults2 <-  parLapply(cl, seq_along(Outcomes), function(i){
+          
+          # Setup model:
           mod <- paste0(
             Outcomes[i],
             " ~ 0 + ",
@@ -359,21 +417,54 @@ lmer_mlVAR <-
             idvar,
             ")"
           )        
-  
+          
+          
+          # Formula:
+          formula <- as.formula(mod)
+          
+          # Run lmer:
+          return(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...)))
+        })
         
-        # Formula:
-        formula <- as.formula(mod)
+        # Stop the cluster:
+        stopCluster(cl)
         
-        # Run lmer:
-        lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))
-        
+      } else {
         if (verbose){
-          setTxtProgressBar(pb, i)
+          pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
+        }
+        for (i in seq_along(Outcomes)){
+          
+          # Setup model:
+          mod <- paste0(
+            Outcomes[i],
+            " ~ 0 + ",
+            paste(Outcomes[-i],collapse="+"),
+            " + ( 0 + ",
+            paste(Outcomes[-i],collapse="+"),
+            ifelse(contemporaneous  == "orthogonal","||","|"),
+            idvar,
+            ")"
+          )        
+          
+          
+          # Formula:
+          formula <- as.formula(mod)
+          
+          # Run lmer:
+          lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))
+          
+          if (verbose){
+            setTxtProgressBar(pb, i)
+          }
+        }
+        if (verbose){
+          close(pb)
         }
       }
-      if (verbose){
-        close(pb)
-      }
+      
+      
+      
       
       
       ### Gamma_Theta is the least squares regression matrix:
@@ -393,7 +484,7 @@ lmer_mlVAR <-
       }
       colnames(Gamma_Theta_SE) <- Outcomes
       rownames(Gamma_Theta_SE) <- Outcomes
-    
+      
       # P:
       Gamma_Theta_P <- 2*(1-pnorm(abs(Gamma_Theta_fixed/Gamma_Theta_SE)))
       colnames(Gamma_Theta_P) <- Outcomes
@@ -401,7 +492,7 @@ lmer_mlVAR <-
       
       # Error variances:
       D <- diag(1/sapply(lmerResults2,sigma)^2)
-
+      
       # Inverse estimate:
       inv <- D %*% (diag(length(Outcomes)) - Gamma_Theta_fixed)
       
@@ -412,7 +503,7 @@ lmer_mlVAR <-
       # invert:
       Theta_fixed_cov <- corpcor::pseudoinverse(inv)
       Theta_fixed_prec <- inv
-    
+      
       colnames(Theta_fixed_cov) <- rownames(Theta_fixed_cov) <- 
         colnames(Theta_fixed_prec) <- rownames(Theta_fixed_prec)  <- Outcomes
       
@@ -425,12 +516,12 @@ lmer_mlVAR <-
           res[-i] <- unlist(ranef(lmerResults2[[i]])[[idvar]][p,])
           res
         }))
-  
+        
         Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
         Theta_subject_cov[[p]] <- forcePositive(corpcor::pseudoinverse(Theta_subject_prec[[p]]))
         Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
       }
-
+      
       ### Store results:
       Results[["Theta"]] <- modelCov(
         cor = modelArray(mean=cov2cor(Theta_fixed_cov),subject = Theta_subject_cor),
@@ -445,7 +536,7 @@ lmer_mlVAR <-
         P = Gamma_Theta_P
       )
     }
- 
+    
     
     
     # Goodness of fit

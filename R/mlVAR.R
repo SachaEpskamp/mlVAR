@@ -2,8 +2,12 @@ aveMean <- function(x){
   mean(x,na.rm=TRUE)
 }
 
-aveCenter <- function(x){
-  x - mean(x,na.rm=TRUE)
+aveCenter <- function(x, scale = FALSE){
+  x <- x - mean(x,na.rm=TRUE)
+  if (scale){
+    x <- x / sd(x,na.rm=TRUE)
+  }
+  x
 }
 
 aveLag <- function(x, lag=1){
@@ -46,7 +50,7 @@ mlVAR <- function(
   contemporaneous = c("default","correlated","orthogonal","fixed","unique"), # IF NOT FIXED: 2-step estimation method (lmer again on residuals)
   temporal = c("default", "correlated","orthogonal","fixed","unique"), # Unique = multi-level!
   # betweenSubjects = c("default","GGM","posthoc"), # Should covariances between means be estimated posthoc or as a GGM? Only used when method = "univariate"
-  
+  nCores = 1, # Number of computer cores
   # Misc:
   # maxTimeDiff, # If not missing. maximum time difference.
   # LMERcontrol = list(optimizer = "bobyqa"), # "bobyqa"  or "Nelder_Mead"
@@ -54,6 +58,7 @@ mlVAR <- function(
   verbose = TRUE, # Include progress bar?
   compareToLags,
   scale = TRUE, # standardize variables grand mean before estimation
+  scaleWithin = FALSE, # Scale variables within-person
   
   orthogonal # Used for backward competability
   
@@ -148,6 +153,10 @@ mlVAR <- function(
     if (verbose) {
       message(paste0("'estimator' argument set to '",estimator,"'"))
     }
+  }
+  
+  if (nCores != 1 && estimator != "lmer"){
+    stop("'nCores > 1' only supported for 'lmer' estimator.")
   }
   
   if (temporal == "default"){
@@ -337,7 +346,7 @@ mlVAR <- function(
         # Then center:
         ### CENTERING ONLY NEEDED WHEN ESTIMATOR != JAGS ###
         if (!estimator %in% c("JAGS")){
-          augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], FUN = aveCenter) 
+          augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], FUN = function(xx)aveCenter(xx,scale=scaleWithin))
         } 
       }
       
@@ -352,7 +361,8 @@ mlVAR <- function(
   
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
-    Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal)
+    Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal,
+                      nCores=nCores)
   # } else if (estimator == "stan"){
     # Res <- stan_mlVAR(PredModel,augData,idvar,verbose=verbose,temporal=temporal,nCores=nCores,...)    
   

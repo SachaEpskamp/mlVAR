@@ -48,3 +48,6 @@ importFrom("stats", "coef", "lm", "resid", "sigma")
              "cov2cor", "na.omit", "pnorm", "quantile", "rWishart",
              "residuals", "rnorm", "runif", "sd")
   importFrom("utils", "head", "setTxtProgressBar", "txtProgressBar")
+  
+  
+import(parallel)
