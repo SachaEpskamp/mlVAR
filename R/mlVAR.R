@@ -10,6 +10,13 @@ aveCenter <- function(x, scale = FALSE){
   x
 }
 
+aveScaleNoCenter <- function(x){
+  meanGroup <- mean(x,na.rm=TRUE)
+  x <- x - meanGroup
+  x <- x / sd(x,na.rm=TRUE)
+  x + meanGroup
+}
+
 aveLag <- function(x, lag=1){
   # Then lag:
   if (lag > length(x)){
@@ -350,6 +357,13 @@ mlVAR <- function(
         } 
       }
       
+    }
+  }
+  
+  # Also within-person standardize dependent vars if scaleWithin = TRUE
+  if (isTRUE(scaleWithin)){
+    for (i in seq_along(vars)){
+      augData[[vars[i]]] <- ave(augData[[vars[i]]],augData[[idvar]], FUN = function(xx)aveScaleNoCenter(xx))
     }
   }
 
