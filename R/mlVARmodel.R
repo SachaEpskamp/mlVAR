@@ -134,7 +134,10 @@ mlVARsim <- function(
   beta_fixed <- rnorm(nTemporal,0)
   # set weakest 50% to zero:
   beta_fixed[order(abs(beta_fixed))[1:round(nTemporal/2)]] <- 0
-  
+  # Include auto-regressions:
+  mat <- matrix(0,nNode,nNode*lag)
+  diag(mat) <- 1
+  beta_fixed[c(mat)==1] <- runif(sum(c(mat)==1),0,1)
   
   # 3. Generate random parameter sets:
   if (lag > 0){
