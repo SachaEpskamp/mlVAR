@@ -404,6 +404,8 @@ mlVAR <- function(
     temporal = temporal
   )
   
+  Res$IDs <- rownames(ranef(Res$output[[1]])[[idvar]])
+  
   return(Res)
   
 }
