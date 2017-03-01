@@ -40,7 +40,7 @@ S3method(plot, mlVAR0)
 S3method(print, mlVAR0)
 S3method(summary, mlVAR0)
 
-importFrom("stats", "coef", "lm", "resid", "sigma")
+importFrom("stats", "coef", "lm", "resid")
 
   importFrom("graphics", "plot")
   importFrom("methods", "is")
