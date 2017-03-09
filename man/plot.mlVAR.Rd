@@ -10,8 +10,9 @@
 }
 \usage{
   \method{plot}{mlVAR}(x, type = c("temporal", "contemporaneous", "between"), lag = 1, 
-      partial = TRUE, SD = FALSE, subject, order, nonsig = c("show", "dashed", "hide"), 
-      rule = c("or","and"), alpha = 0.05, onlySig = FALSE, layout = "spring", ...)
+      partial = TRUE, SD = FALSE, subject, order, nonsig = c("default", "show", "dashed",
+      "hide"), rule = c("or","and"), alpha = 0.05, onlySig = FALSE, layout = "spring", 
+      ...)
   \method{plot}{mlVARsim}(x, ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -38,7 +39,7 @@ Subject number. If not missing, will plot the network of a specific subject inst
 An optional character vector used to set the order of nodes in the network.
 }
   \item{nonsig}{
-How to handle non-significant edges? 
+How to handle non-significant edges? Default will hide non-significant edges when p-values are available (fixed effects, partial correlations and temporal effects).
 }
 \item{rule}{
 How to choose significance in node-wise estimated GGMs (contemporaneous and between-subjects). \code{"or"} selects an edge as being significant if one node predicting the other is significant, and \code{"and"} requires both predictions to be significant.
@@ -51,6 +52,9 @@ Deprecated argument only used for backward competability.
 }
   \item{layout}{
 The layout argument used by \code{\link[qgraph]{qgraph}}
+}
+\item{verbose}{
+Logical, print messages to the console?
 }
   \item{\dots}{
 Arguments sent to \code{\link[qgraph]{qgraph}}

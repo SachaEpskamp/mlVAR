@@ -82,17 +82,20 @@ summary.mlVAR <- function(
     pcor <- object$results$Theta$pcor$mean
     pcorSD <- object$results$Theta$pcor$SD
     UT <- upper.tri(cor)
-    
-    
+    P <- object$results$Gamma_Theta$P
+
     cat("\n\nContemporaneous effects (posthoc estimated):\n")
     ContDF <- data.frame(
       node1 = vars[col(cor)][UT],
       node2 = vars[row(cor)][UT],
+      "P 1->2" = round(P[UT],round),
+      "P 2->1" = round(t(P)[UT],round),
       pcor = round(pcor[UT],round),
       ran_SD_pcor = round(pcorSD[UT],round),
       cor = round(cor[UT],round),
       ran_SD_cor = round(corSD[UT],round)
     )
+    names(ContDF) <- c("v1","v2","P 1->2","P 1<-2","pcor","ran_SD_pcor","cor","ran_SD_cor")
     
     print(ContDF,row.names=FALSE)
     
@@ -159,11 +162,12 @@ plot.mlVAR <-
            SD = FALSE, # Plots SD instead of normal parameters
            subject, # If assigned, show the network of a particulair subject instead
            order, # If assigned, re-order nodes
-           nonsig = c("show","hide","dashed"), # How to handle nonsignificant edges? In Bayesian estimation, checks if 0 is inside interval.
+           nonsig = c("default","show","hide","dashed"), # How to handle nonsignificant edges? In Bayesian estimation, checks if 0 is inside interval.
            rule = c("or", "and"), # GGM sig rule
            alpha = 0.05, # alpha value for significance test
            onlySig = FALSE, # Backward competability argument.
            layout = "spring",
+           verbose = TRUE,
            ...  #Arguments sent to qgraph
   ){
     rule <- match.arg(rule)
@@ -192,6 +196,19 @@ plot.mlVAR <-
     # Now check for arguments:
     type <- match.arg(type)
     nonsig <- match.arg(nonsig)
+    if (nonsig == "default"){
+      nonsig <- "hide"
+      if (!partial){
+        nonsig <- "show"
+      }
+      if (!missing(subject)){
+        nonsig <- "show"
+      }
+      if (verbose){
+        message(paste0("'nonsig' argument set to: '",nonsig,"'"))
+      }
+    }
+    
     if (missing(order)){
       order <- x$input$vars
     }

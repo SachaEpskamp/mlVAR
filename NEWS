@@ -1,6 +1,7 @@
 Changes in version 0.3.3
   o The plot method for mlVAR sim objects now uses nonsig = "show"
   o plot method now uses nonsig = "show" by default!
+  o 
 
 Changes in version 0.3.1
   o The 'partial' argument in 'plot.mlVAR' now defaults to TRUE
