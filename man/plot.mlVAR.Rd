@@ -9,10 +9,11 @@
   The function \code{plot.mlVAR} plots estimated model coefficients as networks using \code{qgraph}. These can be three networks: temporal, contemporaneous and between-subjects effects, of which the latter two can be plotted as a correlation or a partial correlation network.
 }
 \usage{
-  \method{plot}{mlVAR}(x, type = c("temporal", "contemporaneous", "between"), lag = 1, 
-      partial = TRUE, SD = FALSE, subject, order, nonsig = c("default", "show", "dashed",
-      "hide"), rule = c("or","and"), alpha = 0.05, onlySig = FALSE, layout = "spring", 
-      ...)
+  \method{plot}{mlVAR}(x, type = c("temporal", "contemporaneous", "between"),
+                 lag = 1, partial = TRUE, SD = FALSE, subject, order,
+                 nonsig = c("default", "show", "hide", "dashed"), rule
+                 = c("or", "and"), alpha = 0.05, onlySig = FALSE,
+                 layout = "spring", verbose = TRUE, ...)
   \method{plot}{mlVARsim}(x, ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -54,7 +55,7 @@ Deprecated argument only used for backward competability.
 The layout argument used by \code{\link[qgraph]{qgraph}}
 }
 \item{verbose}{
-Logical, print messages to the console?
+  Logical, should message be printed to the console?
 }
   \item{\dots}{
 Arguments sent to \code{\link[qgraph]{qgraph}}

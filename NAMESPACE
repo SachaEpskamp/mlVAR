@@ -51,3 +51,6 @@ importFrom("stats", "coef", "lm", "resid")
   
   
 import(parallel)
+
+
+importFrom("stats", "sigma")
