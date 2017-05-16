@@ -66,6 +66,7 @@ mlVAR <- function(
   compareToLags,
   scale = TRUE, # standardize variables grand mean before estimation
   scaleWithin = FALSE, # Scale variables within-person
+  AR = FALSE, # Set to TRUE to estimate AR models instead
   
   orthogonal # Used for backward competability
   
@@ -313,6 +314,7 @@ mlVAR <- function(
     type =  "within",
     stringsAsFactors = FALSE
   )
+
   
   # Between-subjects model:
   if (betweenSubjects == "GGM" & estimator == "lmer"){
@@ -392,11 +394,15 @@ mlVAR <- function(
   augData <- na.omit(augData[,Vars])
   PredModel <- PredModel[is.na(PredModel$lag) | (PredModel$lag %in% lags),]
   
+  # check AR:
+  if (AR && estimator != "lmer"){
+    stop("AR = TRUE only supported for estimator = 'lmer'")
+  }
   
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
     Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal,
-                      nCores=nCores)
+                      nCores=nCores, AR = AR)
     # } else if (estimator == "stan"){
     # Res <- stan_mlVAR(PredModel,augData,idvar,verbose=verbose,temporal=temporal,nCores=nCores,...)    
     
@@ -421,10 +427,12 @@ mlVAR <- function(
     lags = lags,
     compareToLags=compareToLags,
     estimator = estimator,
-    temporal = temporal
+    temporal = temporal,
+    AR = AR
   )
   
   Res$IDs <- rownames(ranef(Res$output[[1]])[[idvar]])
+
   
   return(Res)
   

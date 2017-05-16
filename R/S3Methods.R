@@ -436,7 +436,7 @@ plot.mlVAR <-
     }
     
     qgraph::qgraph(NET[ord,ord],lty = lty,labels = x$input$vars[ord],layout=layout,
-                   ...)
+                   ..., directed = type == "temporal")
   }
 
 

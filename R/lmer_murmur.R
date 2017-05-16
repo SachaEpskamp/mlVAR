@@ -23,7 +23,7 @@ forcePositive <- function(x){
 
 lmer_mlVAR <- 
   function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",
-           nCores = 1,...){
+           nCores = 1, AR = FALSE, ...){
     
     
     
@@ -54,6 +54,9 @@ lmer_mlVAR <-
       lmerResults <-  parLapply(cl, seq_along(Outcomes), function(i){
         # submodel:
         subModel <-  dplyr::filter_(model, ~ dep == Outcomes[i])
+        if (AR){
+          subModel <- subModel %>% filter_(~dep == pred | type == "between")
+        }
         
         # Setup model:
         if (temporal != "fixed"){
@@ -96,6 +99,11 @@ lmer_mlVAR <-
         # submodel:
         subModel <- model %>% filter_(~ dep == Outcomes[i])
         
+        # Remove cross-lagged if AR = TRUE:
+        if (AR){
+          subModel <- subModel %>% filter_(~dep == pred | type == "between")
+        }
+        
         # Setup model:
         if (temporal != "fixed"){
           mod <- paste0(
@@ -136,7 +144,7 @@ lmer_mlVAR <-
     }
     
     
-    
+  
     ### Collect the results:
     Results <- list()
     
@@ -167,7 +175,7 @@ lmer_mlVAR <-
     ### STORE ###
     Results[['mu']] <- modelArray(mean = mu_fixed,SE = mu_SE,SD = mu_SD,subject = mu_subject)
     
-    # Mu covariances (need to be estimated):
+     # Mu covariances (need to be estimated):
     ### First from random effects:
     #     if (betweenSubjects == "posthoc"){
     #       mu_cov <- cov(do.call(rbind,mu_subject))  
@@ -228,6 +236,8 @@ lmer_mlVAR <-
       colnames(Beta_fixed) <- predID
       rownames(Beta_fixed) <- Outcomes
       
+    
+      
       # SE; SD; P; subject
       
       # SE:
@@ -240,12 +250,21 @@ lmer_mlVAR <-
       colnames(Beta_P) <- predID
       rownames(Beta_P) <- Outcomes
       
+      # AR:
+      if (AR){
+        Beta_fixed[is.na(Beta_fixed)] <- 0
+        Beta_SE[is.na(Beta_SE)] <- 0
+        Beta_P[is.na(Beta_P)] <- 0
+      }
       
       #SD:
       if (temporal != "fixed"){
         if (temporal == "correlated"){
           
           Beta_SD <- do.call(rbind,lapply(lmerResults, function(x) attr(lme4::VarCorr(x)[[idvar]],"stddev")[-1]))
+          if (AR){
+            Beta_SD <- diag(c(unlist(Beta_SD)))
+          }
           colnames(Beta_SD) <- predID
           rownames(Beta_SD) <- Outcomes
           
@@ -257,6 +276,9 @@ lmer_mlVAR <-
             df <- as.data.frame(lme4::VarCorr(x))
             df$sdcor[match(predID,df$var1)]
           }))
+          if (AR){
+            Beta_SD <- diag(c(unlist(Beta_SD)))
+          }
           colnames(Beta_SD) <- predID
           rownames(Beta_SD) <- Outcomes
           
@@ -266,13 +288,24 @@ lmer_mlVAR <-
         # Subject:
         #     if (!orthogonal){
         #       
-        rans <- lapply(lmerResults, function(x)ranef(x)[[idvar]][,predID])  
-        Beta_subject <- lapply(seq_len(nrow(rans[[1]])),function(i){
-          Beta <- Beta_fixed + do.call(rbind,lapply(rans,function(x)x[i,]))
-          colnames(Beta) <- predID
-          rownames(Beta) <- Outcomes
-          Beta
-        })
+        if (!AR){
+          rans <- lapply(lmerResults, function(x)ranef(x)[[idvar]][,predID])  
+          Beta_subject <- lapply(seq_len(nrow(rans[[1]])),function(i){
+            Beta <- Beta_fixed + do.call(rbind,lapply(rans,function(x)x[i,]))
+            colnames(Beta) <- predID
+            rownames(Beta) <- Outcomes
+            Beta
+          })
+        } else {
+          rans <- lapply(lmerResults, function(x)ranef(x)[[idvar]][,2])  
+          Beta_subject <- lapply(seq_len(length(rans[[1]])),function(i){
+            Beta <- Beta_fixed + diag(sapply(rans,function(x)x[i]))
+            colnames(Beta) <- predID
+            rownames(Beta) <- Outcomes
+            Beta
+          })
+        }
+
         
         ### STORE RESULTS ###
         Results[["Beta"]] <- modelArray(

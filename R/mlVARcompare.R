@@ -21,11 +21,12 @@ mlVARcompare <- function(...){
   if (!all(sapply(Vars,length) == length(unVars)) & !all(sapply(Vars,function(x)all(unVars%in%x)))){
     stop("Models do not have the same variables")
   }
-  
+
   # Construct data frame with fit for every variable:
   Fits <- lapply(dots,'[[','fit')
   for (i in seq_along(Fits)){
     Fits[[i]]$lags <- paste(dots[[i]]$input$lags, collapse = "; ")
+    Fits[[i]]$temporalModel <- ifelse(dots[[i]]$input$AR,"AR","VAR")
     if (all(dots[[i]]$input$lags == 0)){
       Fits[[i]]$temporal <- ""     
     } else {
@@ -54,8 +55,8 @@ print.mlVARcompare <- function(x,...){
     cat("\nModels for variable",names(x)[i],"\n")
     print(x[[i]],row.names=FALSE)
     
-    cat("Best fitting model AIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal)[which.min(x[[i]]$aic)],"\n")
-    cat("Best fitting model BIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal)[which.min(x[[i]]$bic)],"\n")    
+    cat("Best fitting model AIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal," & temporal model: ",x[[i]]$temporalModel)[which.min(x[[i]]$aic)],"\n")
+    cat("Best fitting model BIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal," & temporal model: ",x[[i]]$temporalModel)[which.min(x[[i]]$bic)],"\n")    
     cat("\n")
   }
   
@@ -64,7 +65,7 @@ print.mlVARcompare <- function(x,...){
   overalTab <- do.call(rbind,x) %>% group_by_("var") %>%
     mutate_(bestAIC = ~aic == min(aic), bestBIC = ~bic == min(bic)) %>%
     ungroup %>% 
-    group_by_("lags","temporal") %>% summarize_(nAIC = ~sum(bestAIC), nBIC = ~sum(bestBIC)) %>%
+    group_by_("lags","temporal","temporalModel") %>% summarize_(nAIC = ~sum(bestAIC), nBIC = ~sum(bestBIC)) %>%
     as.data.frame
   print(overalTab,row.names = FALSE)
   
