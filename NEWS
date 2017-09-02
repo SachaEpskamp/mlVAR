@@ -1,5 +1,7 @@
-Changes in version 0.3.4
+Changes in version 0.4
   o Added AR argument to mlVAR to fit AR models only
+  o estimator = "Mplus" is now supported! Requires Mplus 8 to be installed.
+    o Several arguments have been added to mlVAR to handle Mplus estimation
 
 Changes in version 0.3.3
   o The plot method for mlVAR sim objects now uses nonsig = "show"

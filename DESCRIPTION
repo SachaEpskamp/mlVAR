@@ -1,9 +1,9 @@
 Package: mlVAR
 Type: Package
 Title: Multi-Level Vector Autoregression
-Version: 0.3.4
+Version: 0.4
 Depends: R (>= 3.3.0)
-Imports: lme4,  arm, qgraph, dplyr, clusterGeneration, mvtnorm, corpcor, plyr, abind, methods, parallel
+Imports: lme4,  arm, qgraph, dplyr, clusterGeneration, mvtnorm, corpcor, plyr, abind, methods, parallel, MplusAutomation
 Author: Sacha Epskamp, Marie K. Deserno and Laura F. Bringmann
 Maintainer: Sacha Epskamp <mail@sachaepskamp.com>
 Description: Estimates the multi-level vector autoregression model on time-series data.

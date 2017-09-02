@@ -53,7 +53,7 @@ mlVAR <- function(
   
   # Estimation options:
   # orthogonal, # TRUE or FALSE for orthogonal edges. Defaults to nvar < 6
-  estimator = c("default","lmer","lm"), # Add more? estimator = "least-squares" IGNORES multi-level
+  estimator = c("default","lmer","lm","Mplus"), # Add more? estimator = "least-squares" IGNORES multi-level
   contemporaneous = c("default","correlated","orthogonal","fixed","unique"), # IF NOT FIXED: 2-step estimation method (lmer again on residuals)
   temporal = c("default", "correlated","orthogonal","fixed","unique"), # Unique = multi-level!
   # betweenSubjects = c("default","GGM","posthoc"), # Should covariances between means be estimated posthoc or as a GGM? Only used when method = "univariate"
@@ -67,6 +67,11 @@ mlVAR <- function(
   scale = TRUE, # standardize variables grand mean before estimation
   scaleWithin = FALSE, # Scale variables within-person
   AR = FALSE, # Set to TRUE to estimate AR models instead
+  MplusSave = TRUE,
+  MplusName = "mlVAR",
+  iterations = "(2000)",
+  chains = nCores,
+  signs,
   
   orthogonal # Used for backward competability
   
@@ -163,8 +168,8 @@ mlVAR <- function(
     }
   }
   
-  if (nCores != 1 && estimator != "lmer"){
-    stop("'nCores > 1' only supported for 'lmer' estimator.")
+  if (nCores != 1 && !estimator %in% c("Mplus","lmer")){
+    stop("'nCores > 1' only supported for 'lmer' and 'Mplus' estimator.")
   }
   
   if (temporal == "default"){
@@ -200,6 +205,17 @@ mlVAR <- function(
       stop("'lmer' estimator does not support temporal = 'unique'")
     }
   }
+  if (estimator == "Mplus"){
+    if (temporal %in% c("unique")){
+      stop("'Mplus' estimator does not support temporal = 'unique'")
+    }
+    
+    if (contemporaneous %in% c("unique")){
+      stop("'Mplus' estimator does not support contemporaneous = 'unique'")
+    }
+  }
+  
+  
   
   if (estimator == "lm"){
     if (!temporal %in% c("unique")){
@@ -242,6 +258,10 @@ mlVAR <- function(
     dayvar <- "DAY"
     data[[dayvar]] <- 1
   } else {
+    if (estimator == "Mplus"){
+      warning("estimator = 'Mplus' does not support dayvar argument. Day variable is ignored in computation. Days can manually be added by using 'beepvar' in combination with missing beeps (e.g., for 5 measurements per day, add a column with values 1, 2, 3, 4, 5, 9, 10, etcetera and refer the column in the 'beepvar' argument).")
+      
+    }
     if (!is.character(dayvar) || length(dayvar) != 1 || !dayvar %in% names(data)){
       stop("'dayvar' must be a string indicating a column name of the data.")
     }
@@ -255,6 +275,10 @@ mlVAR <- function(
   } else {
     if (!is.character(beepvar) || length(beepvar) != 1 || !beepvar %in% names(data)){
       stop("'beepvar' must be a string indicating a column name of the data.")
+    }
+    
+    if (any(duplicated(data[[beepvar]])) && estimator == "Mplus"){
+      warning("Duplicated beeps found with estimator = 'Mplus'. Input is likely not proper.")
     }
   }# else input$beepvar <- beepvar
   
@@ -314,7 +338,7 @@ mlVAR <- function(
     type =  "within",
     stringsAsFactors = FALSE
   )
-
+  
   
   # Between-subjects model:
   if (betweenSubjects == "GGM" & estimator == "lmer"){
@@ -329,8 +353,13 @@ mlVAR <- function(
   # Unique predictors:
   UniquePredModel <- PredModel[!duplicated(PredModel[,c("pred","lag","type")]),c("pred","lag","type")]
   
-  # Ad ID:
-  UniquePredModel$predID <- paste0("Predictor__",seq_len(nrow(UniquePredModel)))
+  # Add ID:
+  if (estimator != "Mplus"){
+    UniquePredModel$predID <- paste0("Predictor__",seq_len(nrow(UniquePredModel)))
+  }
+  # } else {
+  #   UniquePredModel$predID <- paste0("b_",seq_len(nrow(UniquePredModel)))
+  # }
   
   # Left join to total:
   PredModel <- PredModel %>% left_join(UniquePredModel, by = c("pred","lag","type"))
@@ -359,8 +388,8 @@ mlVAR <- function(
   # Enter NA's:
   augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar))
   
-  # Add the predictors (when estimatior != JAGS):
-  if (estimator != "JAGS"){
+  # Add the predictors (when estimatior != JAGS or Mplus):
+  if (!estimator %in% c("Mplus","JAGS")){
     for (i in seq_len(nrow(UniquePredModel))){
       # between: add mean variable:
       
@@ -390,9 +419,11 @@ mlVAR <- function(
   }
   
   # Remove missings from augData:
-  Vars <- unique(c(PredModel$dep,PredModel$predID,idvar,beepvar,dayvar))
-  augData <- na.omit(augData[,Vars])
-  PredModel <- PredModel[is.na(PredModel$lag) | (PredModel$lag %in% lags),]
+  if (!estimator %in% c("JAGS","Mplus")){
+    Vars <- unique(c(PredModel$dep,PredModel$predID,idvar,beepvar,dayvar))
+    augData <- na.omit(augData[,Vars])
+    PredModel <- PredModel[is.na(PredModel$lag) | (PredModel$lag %in% lags),]
+  } # JAGS and Mplus handle missings!
   
   # check AR:
   if (AR && estimator != "lmer"){
@@ -418,6 +449,10 @@ mlVAR <- function(
     #                       orthogonal = orthogonal, verbose=verbose, contemporaneous=contemporaneous,
     #                       JAGSexport=JAGSexport,
     #                       n.chain = n.chain, n.iter=n.iter,estOmega=estOmega)
+  } else if (estimator == "Mplus"){
+    Res <- Mplus_mlVAR(PredModel,augData,idvar,temporal=temporal,contemporaneous=contemporaneous, verbose=verbose,MplusSave=MplusSave, MplusName=MplusName,iterations=iterations,
+                       chains=chains, nCores = nCores,signs=signs)
+    
   } else  stop(paste0("Estimator '",estimator,"' not yet implemented."))
   
   
@@ -431,7 +466,11 @@ mlVAR <- function(
     AR = AR
   )
   
-  Res$IDs <- rownames(ranef(Res$output[[1]])[[idvar]])
+  if (estimator == "lmer"){
+    Res$IDs <- rownames(ranef(Res$output[[1]])[[idvar]])    
+  } else {
+    Res$IDs <- NULL
+  }
 
   
   return(Res)

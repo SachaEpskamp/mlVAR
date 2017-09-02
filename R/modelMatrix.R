@@ -7,7 +7,114 @@ dimV <- function(x){
 }
 
 # Wrapper for samples of fixed and samples of subjects:
-parSamples <- function(
+parSamples_Mplus <- function(
+  fixed, # Array with fixed effect samples
+  SD = NULL,  # Array with SD samples
+  subject = NULL
+){
+
+  if (missing(fixed)){
+    stop("'fixed' must not be missing.")
+  }
+  # if (missing(SD)){
+  #   stop("'SD' must not be missing.")
+  # }
+  
+  aggDims <- 1:(length(dimV(fixed))-1)
+  mean <- apply(fixed, aggDims, mean)
+  lower <- apply(fixed, aggDims, quantile, 0.025)
+  upper <- apply(fixed, aggDims, quantile, 0.975)
+  if (!is.null(SD)){
+    SD <- apply(SD, aggDims, mean)    
+  }
+ 
+  modelArray(
+    mean = mean,
+    lower = lower,
+    upper = upper,
+    SD = SD,
+    subject = subject
+  )
+}
+
+# Wrapper function to compute covs based on mplus samples
+covSamples_Mplus <- function(fixed, SD = NULL, subject = NULL){
+  
+  if (missing(fixed)){
+    stop("'fixed' must not be missing.")
+  }
+
+    # Covariance:
+  cov_mean <-  apply(fixed, 1:2, mean)
+  cov_lower <-  apply(fixed, 1:2, quantile, 0.025)
+  cov_upper <-  apply(fixed, 1:2, quantile, 0.975)
+  cov_subject <- NULL
+  
+  # cor samples:
+  corSamples <- fixed
+  for (i in 1:dimV(corSamples)[3]){
+    corSamples[,,i] <- cov2cor(corSamples[,,3])
+  }
+  
+  # Correlation:
+  cor_mean <-  apply(corSamples, 1:2, mean)
+  cor_lower <-  apply(corSamples, 1:2, quantile, 0.025)
+  cor_upper <-  apply(corSamples, 1:2, quantile, 0.975)
+  cor_subject <- NULL
+  
+  # Precision samples:
+  precSamples <- fixed
+  for (i in 1:dimV(precSamples)[3]){
+    precSamples[,,i] <- corpcor::pseudoinverse(precSamples[,,i])
+  } 
+  
+  # Precision:
+  prec_mean <-  apply(precSamples, 1:2, mean)
+  prec_lower <-  apply(precSamples, 1:2, quantile, 0.025)
+  prec_upper <-  apply(precSamples, 1:2, quantile, 0.975)
+  prec_subject <- NULL
+  
+  # pcor:  
+  pcorSamples <- fixed
+  for (i in 1:dimV(pcorSamples)[3]){
+    pcorSamples[,,i] <- corpcor::cor2pcor(pcorSamples[,,i])
+  } 
+  
+  pcor_mean <-  apply(pcorSamples, 1:2, mean)
+  pcor_lower <-  apply(pcorSamples, 1:2, quantile, 0.025)
+  pcor_upper <-  apply(pcorSamples, 1:2, quantile, 0.975)
+  pcor_subject <- NULL
+
+  modelCov(
+    cov = modelArray(
+      mean = cov_mean,
+      lower = cov_lower,
+      upper = cov_upper,
+      subject = cov_subject
+    ),
+    cor = modelArray(
+      mean = cor_mean,
+      lower = cor_lower,
+      upper = cor_upper,
+      subject = cor_subject
+    ),
+    prec = modelArray(
+      mean = prec_mean,
+      lower = prec_lower,
+      upper = prec_upper,
+      subject = prec_subject
+    ),
+    pcor = modelArray(
+      mean = pcor_mean,
+      lower = pcor_lower,
+      upper = pcor_upper,
+      subject = pcor_subject
+    )
+  )
+}
+
+# Wrapper for samples of fixed and samples of subjects:
+parSamples_bugs <- function(
   samples, # BUGS samples
   fixed, # Name of fixed
   subject, # Name of subject
@@ -100,7 +207,7 @@ parSamples <- function(
 
 
 # Wrapper function to compute this based on samples of covariance:
-covSamples <- function(samples, fixed, subject){
+covSamples_bugs <- function(samples, fixed, subject){
   
   if (missing(subject)){
     subjectSamples <- NULL

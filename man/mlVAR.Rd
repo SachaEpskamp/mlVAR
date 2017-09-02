@@ -5,16 +5,19 @@
 Multilevel VAR Estimation for Multiple Time Series
 }
 \description{
-The function \code{mlVAR0} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
+The function \code{mlVAR} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
 }
 \usage{
 mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
-                 estimator = c("default", "lmer", "lm"),
+                 estimator = c("default", "lmer", "lm","Mplus"),
                  contemporaneous = c("default", "correlated",
                  "orthogonal", "fixed", "unique"), temporal =
                  c("default", "correlated", "orthogonal", "fixed",
                  "unique"), nCores = 1, verbose = TRUE, compareToLags,
-                 scale = TRUE, scaleWithin = FALSE, orthogonal)
+                 scale = TRUE, scaleWithin = FALSE, AR = FALSE, 
+                 MplusSave = TRUE, MplusName = "mlVAR", iterations = "(2000)", 
+                 chains = nCores, signs, orthogonal
+  )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,7 +41,7 @@ String indicating assessment day. Adding this argument makes sure that the first
 String indicating assessment beep per day (if missing, is added). Adding this argument will cause non-consecutive beeps to be treated as missing!
 }
   \item{estimator}{
-The estimator to be used. Currently only \code{"lmer"} is supported.
+The estimator to be used. \code{"lmer"} for sequential univariate multi-level estimation, \code{"Mplus"} for multivariate Bayesian estimation (requires Mplus), and \code{"lm"} for fixed effects estimation.
 }
 \item{contemporaneous}{
   How should the contemporaneous networks be estimated? These networks are always estimated post-hoc by investigating the residuals of the temporal models. \code{"correlated"} and \code{"orthogonal"} run second multi-level models in which the networks are estimated using node-wise estimation. \code{"fixed"} and \code{"unique"} simply correlate the residuals, either by computing one network for all subjects (fixed) or a single network per per subject.
@@ -55,14 +58,20 @@ Logical indicating if console messages and the progress bar should be shown.
   \item{compareToLags}{
 A vector indicating which lags to base the data on. If the model is to be compared with a model with multiple lags using \code{\link{mlVARcompare}}, this argument must be used to make sure the number of observations is the same in both models (e.g., a lag 1 model can model the second observation of a day and a lag-2 model can't, causing different number of observations and incomparable models). It is suggested to not use this argument unless you want to compare models, and always run \code{mlVAR} without using this argument afterwards in the selected model.
 }
+\item{AR}{Logical, should an auto-regression only model be fitted?}
+\item{MplusSave}{Logical, should the Mplus model file and output be saved?}
+\item{MplusName}{Name of the Mplus model file and output (without extensions)}
+\item{iterations}{The string used to define the number of iterations in Mplus}
+\item{chains}{Number of Mplus chains}
+\item{signs}{Optional matrix fixing the signs of contemporaneous correlations. Is estimated by running mlVAR with \code{estimator = "lmer"} if missing.}
   \item{orthogonal}{
 Deprecated argument only added for backward competability. Ignore.
 }
 }
 \details{
-This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals.
+This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals. See arxiv.org/abs/1609.04156 for details.
 
-For more information on multi-level VAR and centering please see Hamaker and Grasman (2014) and Bringmann et al., (2013). A draft on the paper describing this package and metho can be obtained from the maintainer (mail@sachaepskamp.com).
+Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis and read the results into R. Mplus 8 is required for this estimation. It is recommended to set \code{contemporaneous = "fixed"}, though not required. For the estimation of contemporaneous random effects, the signs of contemporaneous *correlations * (not partial correlations) need be set (or estimated) via the \code{signs} argument.
 }
 \value{
 An \code{mlVAR} object 
@@ -71,6 +80,8 @@ An \code{mlVAR} object
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
 
 Hamaker, E. L., & Grasman, R. P. (2014). To center or not to center? Investigating inertia with a multilevel autoregressive model. Frontiers in psychology, 5.
+
+Epskamp, S., Waldorp, L. J., Mottus, R., & Borsboom, D. (2017). Discovering Psychological Dynamics: The Gaussian Graphical Model in Cross-sectional and Time-series Data. arxiv.org/abs/1609.04156.
 }
 \author{
 Sacha Epskamp (mail@sachaepskamp.com)
