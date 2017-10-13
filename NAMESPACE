@@ -1,4 +1,5 @@
 # importFrom(rstan, "stan")
+export(mlVARsample)
 importFrom(clusterGeneration,"genPositiveDefMat")
 export(mlVARsim)
 export(mlVARsim0)

@@ -398,7 +398,7 @@ lmer_mlVAR <-
       if (contemporaneous == "unique"){
         # Compute observed residuals covariances:
         Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
-          cov(resid[augData[[idvar]] == id,],use = "pairwise.complete.obs")
+          cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
         })
         
         # abind all and compute means:
@@ -550,8 +550,19 @@ lmer_mlVAR <-
           res
         }))
         
+        
+        # Posthoc thetas for abnormal variances:
+        Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
+          cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
+        })
+        
+        
         Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
         Theta_subject_cov[[p]] <- forcePositive(corpcor::pseudoinverse(Theta_subject_prec[[p]]))
+        if (sum(diag(Theta_subject_cov[[p]])) > 10*sum(diag(Theta_fixed_cov))){
+          # if cov is too big, replace with sample cov:
+          Theta_subject_cov[[p]]  <- Theta_posthoc[[p]]
+        }
         Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
       }
       
