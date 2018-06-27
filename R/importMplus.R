@@ -1,11 +1,12 @@
 # A function that takes the output of Mplus and reads it to an mlVAR object. Can be used to make changes to codes.
 importMplus <- function(outfile){
-  
+
   # Read output:
-  foo <- capture.output(output <- suppressMessages(suppressWarnings(readModels(outfile))))
+  foo <- capture.output(output <- suppressMessages(suppressWarnings(readModels(outfile,what = "all"))))
 
   # Read results into R:
-  saveInfo <- suppressWarnings(getSavedata_Fileinfo(outfile))
+  # saveInfo <- suppressWarnings(getSavedata_Fileinfo(outfile))
+  saveInfo <- output$savedata_info
   
   # Read samples into R:
   bayesSamples <- output$bparameters$valid_draw
