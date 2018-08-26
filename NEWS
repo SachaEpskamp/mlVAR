@@ -3,6 +3,7 @@ Changes in version 0.4.1
   o Added mlVARsample function to run a simulation study 
 given a mlVAR object.
   o Fixed a bug with estimator = "mPlus"
+  o mlVAR now gives a warning when between-subject networks could not be computed, rather than breaking with an uninformative error.
 
 Changes in version 0.4
   o Added AR argument to mlVAR to fit AR models only
