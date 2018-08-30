@@ -1,3 +1,6 @@
+Changes in version 0.4.2
+  o Contemporaneous multi-level models are now returned in the output
+
 Changes in version 0.4.1
   o mlVAR now uses correlations of residuals as estimate for the contemporaneous correlation matrix (not partial) if estimated inverse covariance matrix is not properly invetable
   o Added mlVARsample function to run a simulation study 
