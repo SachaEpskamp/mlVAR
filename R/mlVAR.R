@@ -467,7 +467,7 @@ mlVAR <- function(
   )
   
   if (estimator == "lmer"){
-    Res$IDs <- rownames(ranef(Res$output[[1]])[[idvar]])    
+    Res$IDs <- rownames(ranef(Res$output$temporal[[1]])[[idvar]])    
   } else {
     Res$IDs <- NULL
   }
