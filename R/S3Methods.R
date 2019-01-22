@@ -435,6 +435,9 @@ plot.mlVAR <-
       NET <- NET * SIG
     }
     
+    if (any(is.na(NET[ord,ord][upper.tri(NET[ord,ord])])) || any(is.na(NET[ord,ord][lower.tri(NET[ord,ord])]))){
+      stop("Network not estimated correctly.")
+    }
     qgraph::qgraph(NET[ord,ord],lty = lty,labels = x$input$vars[ord],layout=layout,
                    ..., directed = type == "temporal")
   }

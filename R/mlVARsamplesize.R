@@ -126,7 +126,7 @@ mlVARsample <- function(
       # Simulate data:
       simData <- mapply(id = 1:nSubject,b = Beta, k = invTheta, m = Means, SIMPLIFY = FALSE, 
                         FUN = function(id, b,k,m){
-                          data <- graphicalVAR:::graphicalVARsim(nTime, b[,,1], k, m)
+                          data <- graphicalVAR::graphicalVARsim(nTime, b[,,1], k, m)
                           data <- as.data.frame(data)
                           names(data) <- input$vars
                           data$id <- id

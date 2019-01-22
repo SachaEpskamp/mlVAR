@@ -5,7 +5,7 @@
 Simulator function given an mlVAR object
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Simulates data based on an mlVAR object
 }
 \usage{
 mlVARsample(object, nTime = c(25, 50, 100, 200), nReps = 100, nCores = 1, ...)
