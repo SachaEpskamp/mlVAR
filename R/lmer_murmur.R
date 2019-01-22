@@ -615,7 +615,7 @@ lmer_mlVAR <-
     # Combine results:
     Results <- list(
       results = Results,
-      output = lmerResults,
+      output = list(temporal = lmerResults, contemporaneous = lmerResults2),
       fit = fit,
       data = augData,
       model = model
