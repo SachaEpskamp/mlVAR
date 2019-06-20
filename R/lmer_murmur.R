@@ -25,6 +25,8 @@ lmer_mlVAR <-
   function(model,augData,idvar,contemporaneous = "orthogonal", verbose=TRUE,temporal="orthogonal",
            nCores = 1, AR = FALSE, ...){
     
+    # Just to be sure:
+    lmerResults <- lmerResults2 <- NULL
     
     
     Outcomes <- unique(model$dep)
