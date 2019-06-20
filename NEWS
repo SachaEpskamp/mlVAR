@@ -1,3 +1,6 @@
+Changes in version 0.4.3
+  o mlVAR now issues a warning when < 20 observations per subject are used
+
 Changes in version 0.4.2
   o Contemporaneous multi-level models are now returned in the output
 

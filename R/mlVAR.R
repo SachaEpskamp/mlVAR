@@ -430,6 +430,12 @@ mlVAR <- function(
     stop("AR = TRUE only supported for estimator = 'lmer'")
   }
   
+  # Check data:
+  tab <- table(augData[[idvar]])
+  if (any(tab < 20)){
+    warning(sum(tab<20)," subjects detected with < 20 measurements. This is not recommended, as within-person centering with too few observations per subject will lead to biased estimates (most notably: negative self-loops).")
+  }
+  
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
     Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal,
