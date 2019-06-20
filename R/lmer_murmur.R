@@ -86,7 +86,8 @@ lmer_mlVAR <-
         formula <- as.formula(mod)
         
         # Run lmer:
-        return(suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...)))
+        browser()
+        return(suppressMessages(suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))))
       })
 
       
@@ -132,7 +133,7 @@ lmer_mlVAR <-
         formula <- as.formula(mod)
         
         # Run lmer:
-        lmerResults[[i]] <- suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))
+        suppressMessages(suppressWarnings(lmerResults[[i]] <- suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))))
         
         if (verbose){
           setTxtProgressBar(pb, i)
