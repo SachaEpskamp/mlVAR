@@ -439,6 +439,7 @@ lmer_mlVAR <-
         
         Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
       }
+      lmerResults2 <- Results[["Theta"]]
       
     } else {
       ### TWO STEP METHOD ###

@@ -38,7 +38,7 @@ Vector indicating the lags to include
 String indicating assessment day. Adding this argument makes sure that the first measurement of a day is not regressed on the last measurement of the previous day. IMPORTANT: only add this if the data has multiple observations per day.
 }
   \item{beepvar}{
-String indicating assessment beep per day (if missing, is added). Adding this argument will cause non-consecutive beeps to be treated as missing!
+Optional string indicating assessment beep per day. Adding this argument will cause non-consecutive beeps to be treated as missing!
 }
   \item{estimator}{
 The estimator to be used. \code{"lmer"} for sequential univariate multi-level estimation, \code{"Mplus"} for multivariate Bayesian estimation (requires Mplus), and \code{"lm"} for fixed effects estimation.
