@@ -144,7 +144,7 @@ lmer_mlVAR <-
         close(pb)
       }
     }
-    
+
     
     ### Collect the results:
     Results <- list()
@@ -518,8 +518,7 @@ lmer_mlVAR <-
       }
       
       
-      
-      
+   
       
       ### Gamma_Theta is the least squares regression matrix:
       Gamma_Theta_fixed <- matrix(0, nVar, nVar)
@@ -561,13 +560,24 @@ lmer_mlVAR <-
       colnames(Theta_fixed_cov) <- rownames(Theta_fixed_cov) <- 
         colnames(Theta_fixed_prec) <- rownames(Theta_fixed_prec)  <- Outcomes
       
-      # Compute random effects:
-      Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <- list()
+
+  # List of all random effects:
+      ranefs <- lapply(lmerResults2, ranef)
+      nRandom <- nrow(ranef(lmerResults2[[1]])[[idvar]])
       
-      for (p in 1:nrow(ranef(lmerResults2[[1]])[[idvar]])){
+      if (verbose){
+        message("Computing random effects")
+        pb <- txtProgressBar(min = 0, max = nRandom, style = 3)
+      }
+      
+      # Compute random effects:
+      Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <-  vector("list",nRandom)
+      
+      
+      for (p in 1:nRandom){
         Gamma_Theta_subject[[p]] <- Gamma_Theta_fixed +  do.call(rbind,lapply(seq_along(lmerResults2),function(i){
           res <- rep(0,nVar)
-          res[-i] <- unlist(ranef(lmerResults2[[i]])[[idvar]][p,])
+          res[-i] <- unlist(ranefs[[i]][[idvar]][p,])
           res
         }))
         
@@ -585,8 +595,16 @@ lmer_mlVAR <-
           Theta_subject_cov[[p]]  <- Theta_posthoc[[p]]
         }
         Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
+        
+        if (verbose){
+          setTxtProgressBar(pb, p)
+        }
       }
       
+      if (verbose){
+        close(pb)
+      }
+
       ### Store results:
       Results[["Theta"]] <- modelCov(
         cor = modelArray(mean=cov2cor(Theta_fixed_cov),subject = Theta_subject_cor),
@@ -600,9 +618,10 @@ lmer_mlVAR <-
         SE = Gamma_Theta_SE,
         P = Gamma_Theta_P
       )
+      
     }
     
-    
+
     
     # Goodness of fit
     names(lmerResults) <- Outcomes

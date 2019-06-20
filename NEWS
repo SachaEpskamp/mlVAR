@@ -2,6 +2,7 @@ Changes in version 0.4.3
   o mlVAR now issues a warning when < 20 observations per subject are used
   o Fixed a bug with 'lmerResults2'
   o Now suppressing warnings and messages from lmer
+  o Added a progress bar for computing random effects
 
 Changes in version 0.4.2
   o Contemporaneous multi-level models are now returned in the output
