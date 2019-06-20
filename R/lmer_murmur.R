@@ -88,7 +88,6 @@ lmer_mlVAR <-
         formula <- as.formula(mod)
         
         # Run lmer:
-        browser()
         return(suppressMessages(suppressWarnings(lmer(formula, data = augData,REML=FALSE, ...))))
       })
 
@@ -478,7 +477,7 @@ lmer_mlVAR <-
           formula <- as.formula(mod)
           
           # Run lmer:
-          return(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...)))
+          return(suppressMessages(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))))
         })
         
         # Stop the cluster:
@@ -507,7 +506,7 @@ lmer_mlVAR <-
           formula <- as.formula(mod)
           
           # Run lmer:
-          lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))
+          lmerResults2[[i]] <- suppressMessages(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...)))
           
           if (verbose){
             setTxtProgressBar(pb, i)
