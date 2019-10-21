@@ -366,7 +366,7 @@ mlVARsim0 <- function(
   }
 
   ### Simulate data:
-  Data <- dplyr::rbind_all(lapply(seq_len(nPerson),function(i){
+  Data <- dplyr::bind_rows(lapply(seq_len(nPerson),function(i){
     Data <- simulateVAR(Betas[[i]],lags=1,Nt=nTime,residuals = Resids[[i]])
     Data$ID <- i
     return(Data)

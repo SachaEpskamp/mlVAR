@@ -320,11 +320,11 @@ mlVAR0 <- function(
   
   if (estimator=="lmmlasso"){
     out <- list(
-      fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Coef")))
-      # se.fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","se.Coef"))),
+      fixedEffects = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","Coef")))
+      # se.fixedEffects = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","se.Coef"))),
       # randomEffects =  ranPerID,
-      # randomEffectsVariance = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Variance"))),
-      # pvals = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","pvals"))),
+      # randomEffectsVariance = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","Variance"))),
+      # pvals = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","pvals"))),
       # pseudologlik = logLik,
       # df = df,
       # BIC = BIC,
@@ -350,15 +350,15 @@ mlVAR0 <- function(
   
   
   ranlist <- lapply(NodeWise_Results,"[[","ranPerID")
-  ranPerID <- lapply(lapply(seq_along(ranlist[[1]]),function(i)lapply(ranlist,function(x)as.data.frame(x[[i]]))),function(xx)as.data.frame(rbind_all(xx)))
+  ranPerID <- lapply(lapply(seq_along(ranlist[[1]]),function(i)lapply(ranlist,function(x)as.data.frame(x[[i]]))),function(xx)as.data.frame(bind_rows(xx)))
 
   # Output:
   out <- list(
-    fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Coef"))),
-    se.fixedEffects = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","se.Coef"))),
+    fixedEffects = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","Coef"))),
+    se.fixedEffects = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","se.Coef"))),
     randomEffects =  ranPerID,
-    randomEffectsVariance = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","Variance"))),
-    pvals = as.data.frame(rbind_all(lapply(NodeWise_Results,"[[","pvals"))),
+    randomEffectsVariance = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","Variance"))),
+    pvals = as.data.frame(bind_rows(lapply(NodeWise_Results,"[[","pvals"))),
 #     pseudologlik = logLik,
 #     df = df,
 #     BIC = BIC,
