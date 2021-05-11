@@ -1,6 +1,9 @@
 mlVARsample <- function(
   object,
   nTime = c(25,50,100,200),
+  nind = 100, 
+  nmissing = 0, 
+  measures = c("sensitivity", "specificity", "bias", "precision"), 
   nReps = 100,
   nCores = 1,
   ... # mlVAR options
@@ -59,12 +62,14 @@ mlVARsample <- function(
     
     out$Bias <- bias(est,real)
     
+    # Precision (1 - FDR):
+    out$precision <- TruePos / (FalsePos + TruePos)
+    
     return(out)
   }
   
   # Dots:
   dots <- list(...)
-  
   
   # Beta matrices:
   Beta <- object$results$Beta$subject
@@ -102,31 +107,38 @@ mlVARsample <- function(
   Results <- parSim(
     # timepoints conditions:
     nTime = nTime,
-    
+    nind = nind, 
+    nmissing = nmissing, 
     # Setup:
     name = "mlVARsim",
     write=FALSE,
     nCores = nCores, # Change this to use more or less computer cores
-    reps = nReps, # Number of repetitions per condition
+    reps = nReps, 
     debug=FALSE,
     
-    export = c("cor0","CompareNetworks","bias","dots","object","invTheta","Means","Beta"),
+    export = c("cor0","CompareNetworks","bias","dots","object","invTheta","Means","Beta", "measures"),
     
     # The simulation code:
     expression = {
-      
       # number of subjects:
       nSubject <- length(Beta)
- 
+      # Vary number of families 
+      # Select random families 
+      random_fam <- sort(sample(nSubject, nind))
+      Beta2 <- Beta[random_fam]
+      invTheta2 <-  invTheta[random_fam] 
+      Means2 <- Means[random_fam]
       
-      # Input
+      nSubject2 <- length(random_fam)
+      
+      # Input - adjust
       input <- c(object$input,dots)
       input$idvar <- "id"
       
       # Simulate data:
-      simData <- mapply(id = 1:nSubject,b = Beta, k = invTheta, m = Means, SIMPLIFY = FALSE, 
+      simData <- mapply(id = 1:nSubject2,b = Beta2, k = invTheta2, m = Means2, SIMPLIFY = FALSE, 
                         FUN = function(id, b,k,m){
-                          data <- graphicalVAR::graphicalVARsim(nTime, b[,,1], k, m)
+                          data <- graphicalVAR:::graphicalVARsim(nTime, b[,,1], k, m)
                           data <- as.data.frame(data)
                           names(data) <- input$vars
                           data$id <- id
@@ -134,8 +146,13 @@ mlVARsample <- function(
                         })
       simData <- do.call(rbind, simData)
       
+      # adjust missingness 
+      # missingness 
+      total_obs <- nrow(simData)
+      rows_na <- sample(nrow(simData), nmissing * total_obs)
+      simData[rows_na,input$vars] <- NA 
       
-      # Fit model:
+      # Fit model 
       Res <- do.call(mlVAR::mlVAR,c(list(data=simData),input))
       
       # # Fixed effects, significant thresholded:
@@ -173,21 +190,58 @@ mlVARsample <- function(
       PDCres$network <- "temporal"
       
       # Per subject:
-      temporalTrue <- unlist(lapply(1:nSubject, function(i){
+      temporalTrue <- unlist(lapply(random_fam, function(i){
         getNet(object, "temporal", nonsig = "show", subject = i)
       }))
-      contemporaneousTrue <-  unlist(lapply(1:nSubject, function(i){
+      contemporaneousTrue <-  unlist(lapply(random_fam, function(i){
         net <- getNet(object, "contemporaneous", nonsig = "show", subject = i)
         net[upper.tri(net)]
       }))
       
-      temporalEst <- unlist(lapply(1:nSubject, function(i){
+      temporalEst <- unlist(lapply(1:nSubject2, function(i){
         getNet(Res, "temporal", nonsig = "show", subject = i)
       }))
-      contemporaneousEst <-  unlist(lapply(1:nSubject, function(i){
+      contemporaneousEst <-  unlist(lapply(1:nSubject2, function(i){
         net <- getNet(Res, "contemporaneous", nonsig = "show", subject = i)
         net[upper.tri(net)]
       }))
+      
+      truePDC_sub <- lapply(random_fam, function(i){getNet(object, "temporal", nonsig = "show", subject = i)})
+      truePCC_sub <- lapply(random_fam, function(i){getNet(object, "contemporaneous", nonsig = "show", subject = i)})
+      estPDC_sub <- lapply(1:nSubject2, function(i){getNet(object, "temporal", nonsig = "show", subject = i)})
+      estPCC_sub <- lapply(1:nSubject2, function(i){getNet(object, "contemporaneous", nonsig = "show", subject = i)})
+      
+      perSubject <- lapply(1:nSubject2, function(i){
+        
+        PCCres_sub <- CompareNetworks(truePCC_sub[[i]], estPCC_sub[[i]], directed = FALSE)
+        PCCres_sub$network <- "contemporaneous"
+        PDCres <- CompareNetworks(truePDC_sub[[i]], estPDC_sub[[i]], directed = TRUE)
+        PDCres$network <- "temporal"
+        
+        
+        Results_subj <- rbind(
+          as.data.frame(PCCres),
+          as.data.frame(PDCres)
+        )
+        
+      })
+      
+      df_perSubject <- do.call(rbind, perSubject)
+      df_perSubject_temp <- df_perSubject[df_perSubject$network == "temporal",]
+      df_perSubject_contemp <- df_perSubject[df_perSubject$network == "contemporaneous",]
+      
+      mean_subject_temp <- list()
+      mean_subject_temp$sensitivity <- mean(df_perSubject_temp$sensitivity)
+      mean_subject_temp$specificity <- mean(df_perSubject_temp$specificity)
+      mean_subject_temp$bias <- mean(df_perSubject_temp$Bias)
+      mean_subject_temp$precision <- mean(df_perSubject_temp$precision)
+      
+      mean_subject_contemp <- list()
+      mean_subject_contemp$sensitivity <- mean(df_perSubject_contemp$sensitivity)
+      mean_subject_contemp$specificity <- mean(df_perSubject_contemp$specificity)
+      mean_subject_contemp$bias <- mean(df_perSubject_contemp$Bias)
+      mean_subject_contemp$precision <- mean(df_perSubject_contemp$precision)
+      
       
       # perSubject <- lapply(1:nSubject, function(i){
       #   
@@ -216,12 +270,23 @@ mlVARsample <- function(
       Results <- data.frame(
         network = c("temporal_fixed","contemporaneous_fixed","temporal_subject","contemporaneous_subject"),
         correlation = c(PDCres$Correlation,PCCres$Correlation,cor(temporalTrue,temporalEst), 
-                        cor(contemporaneousTrue,contemporaneousEst))
+                        cor(contemporaneousTrue,contemporaneousEst)), 
+        sensitivity = c(PDCres$sensitivity, PCCres$sensitivity, mean_subject_temp$sensitivity, mean_subject_contemp$sensitivity), 
+        specificity = c(PDCres$specificity, PCCres$specificity, mean_subject_temp$specificity, mean_subject_contemp$specificity), 
+        bias = c(PDCres$Bias, PCCres$Bias, mean_subject_temp$bias, mean_subject_contemp$bias), 
+        precision = c(PDCres$precision, PCCres$precision, mean_subject_temp$precision, mean_subject_contemp$precision)
       )
       
+      usedmeasures <- measures 
+      totalmeasures <- c("sensitivity", "specificity", "bias", "precision")
+      
+      # if colname not in measure, remove from results 
+      notmeasures <- totalmeasures[which(!totalmeasures %in% usedmeasures)]
+      # remove from results 
+      Results <- Results[ , !(names(Results) %in% notmeasures)]
       return(Results)
     })   
- 
+  
   class(Results) <- "mlVARsample"
   return(Results) 
 }
