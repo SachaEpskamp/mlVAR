@@ -7,7 +7,10 @@ mlVARsample <- function(
   nReps = 100,
   nCores = 1,
   ... # mlVAR options
-){
+){ 
+  if (any(nind > length(object$IDs))){ # what if vector 
+    stop("Not possible to have a number of individuals greater than number of individuals original mlVAR object")  # if one of nind, can be a vector 
+  }
   if (!identical(object$input$lags,1)){
     stop("Only supported for lags = 1")
   }
