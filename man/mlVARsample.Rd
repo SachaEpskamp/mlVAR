@@ -5,10 +5,12 @@
 Simulator function given an mlVAR object
 }
 \description{
-Simulates data based on an mlVAR object
+Simulates data based on an mlVAR object, estimates the mlVAR network model based on the simulated data and compares the estimated network to the mlVAR object network.  
 }
 \usage{
-mlVARsample(object, nTime = c(25, 50, 100, 200), nReps = 100, nCores = 1, ...)
+mlVARsample(object, nTime = c(25, 50, 100, 200), nind = 100, nmissing = 0,
+            measures = c("sensitivity", "specificity", "bias", "precision"), 
+            nReps = 100, nCores = 1, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -16,20 +18,64 @@ mlVARsample(object, nTime = c(25, 50, 100, 200), nReps = 100, nCores = 1, ...)
 mlVAR object
 }
   \item{nTime}{
-Vector with number of time points to test
+Vector with number of time points to test. 
+}
+  \item{nind}{
+Number of individuals in the dataset. It is possible to decrease the number of individuals compared to the individuals in the mlVAR object. However, it is not possible to have more individuals than there are in the mlVAR object.     
+}
+  \item{nmissing}{
+Percentage of missing data to be simulated.   
+}
+  \item{measures}{
+Network comparison measures to return next to the correlation. It is possible to obtain the \code{"sensitivity"}, \code{"specificity"}, \code{"bias"}, and \code{"precision"}.     
 }
   \item{nReps}{
-Number of repititions for each condition
+Number of repetitions for each condition. 
 }
   \item{nCores}{
-Number of cores to use
+Number of cores to use. 
 }
   \item{\dots}{
-Arguments sent to mlVAR
+Arguments sent to mlVAR. 
 }
+}
+
+\details{
+This function simulates data based on the mlVAR object. The individual networks (random effects) are used to simulate data using the \code{graphicalVARsim} function from the graphicalVAR package (Epskamp, 2020). The individual data is combined into one dataset. This dataset is used to estimate the mlVAR network. 
+
+For every condition, the function returns four values per network comparison measure (correlation, sensitivity, specificity, bias, and precision): one for the fixed temporal effects, one for the fixed contemporaneous effects, the mean comparison value of the random temporal effects, and the mean comparison value of the random contemporaneous effects. 
 }
 
 \author{
 Sacha Epskamp <mail@sachaepskamp.com>
 }
 
+\references{
+Sacha Epskamp (2020). graphicalVAR: Graphical VAR for Experience Sampling Data. R package version 0.2.3. https://CRAN.R-project.org/package=graphicalVAR
+}
+
+\seealso{
+\code{\link{mlVARsim}}, \code{\link{mlVAR}} 
+}
+
+\examples{
+\dontrun{
+### Small example ###
+# Simulate data:
+Model <- mlVARsim(nPerson = 50, nNode = 3, nTime = 50, lag=1)
+
+# Estimate using correlated random effects:
+fit <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, temporal = "correlated")
+
+# Sample: 
+samples <- mlVARsample(fit, nTime = 100, nind = 100, nmissing = 0,
+            measures = c("sensitivity", "bias"), 
+            nReps = 10, nCores = 1)
+# Will only return the network comparison measures sensitivity and bias (next to the correlation)  
+
+# Simulate with and without missingness 
+samples <- mlVARsample(fit, nTime = 100, nind = 100, nmissing = c(0, 0.1),
+            measures = c("sensitivity", "bias"), 
+            nReps = 10, nCores = 1)
+}
+} 
