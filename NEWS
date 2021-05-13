@@ -1,6 +1,6 @@
 Changes in Version 0.4.4
   - Some updates to the mlVARsample function
-  - Added Myrthe Veenman to contributer list
+  - Added Myrthe Veenman to contributor list
 
 Changes in version 0.4.3
   o mlVAR now issues a warning when < 20 observations per subject are used
