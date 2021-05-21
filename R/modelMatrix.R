@@ -462,8 +462,11 @@ modelArray <- function(
   # If SD missing but not subject, compute:
   if (missing(SD)){
     if (!is.null(subject)){
+
       N <- length(subject)
-      SD <-  Reduce('+',lapply(subject,function(x)(x - mean)^2)) / (N-1)
+      mean_for_sd <- Reduce("+",subject) / N
+      SD <-  sqrt(Reduce('+',lapply(subject,function(x)(x - mean_for_sd)^2)) / (N-1))
+      
     } else {
       SD <- array(NA, dim)
     }

@@ -1,6 +1,7 @@
 Changes in Version 0.4.4
   - Some updates to the mlVARsample function
   - Added Myrthe Veenman to contributor list
+  - Fixed a bug where contemporaneous standard deviations were reported as variances instead of standard deviations
 
 Changes in version 0.4.3
   o mlVAR now issues a warning when < 20 observations per subject are used
