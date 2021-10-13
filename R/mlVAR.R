@@ -387,7 +387,7 @@ mlVAR <- function(
   
   # Enter NA's:
   augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
-    arrange_(dayvar,beepvar)
+    arrange_(idvar,dayvar,beepvar)
   
   # Add the predictors (when estimatior != JAGS or Mplus):
   if (!estimator %in% c("Mplus","JAGS")){
