@@ -7,10 +7,11 @@ mlVARsample <- function(
   nReps = 100,
   nCores = 1,
   ... # mlVAR options
-){ 
+){       
   if (any(nind > length(object$IDs))){ # what if vector 
     stop("Not possible to have a number of individuals greater than number of individuals original mlVAR object")  # if one of nind, can be a vector 
   }
+
   if (!identical(object$input$lags,1)){
     stop("Only supported for lags = 1")
   }
@@ -99,7 +100,6 @@ mlVARsample <- function(
   if (any(!goodVar | !stationary)){
     warning(paste0("Model for subject(s) ",paste(which(!goodVar | !stationary),collapse=" "),
                    " are not proper removed from simulation"))
-    
     keep <- goodVar | stationary
     invTheta <- invTheta[keep]
     Beta <- Beta[keep]
@@ -156,6 +156,7 @@ mlVARsample <- function(
       simData[rows_na,input$vars] <- NA 
       
       # Fit model 
+      input <- input[-(which(names(input) %in% c("nind", "nTime", "nmissing")))]
       Res <- do.call(mlVAR::mlVAR,c(list(data=simData),input))
       
       # # Fixed effects, significant thresholded:
@@ -211,8 +212,8 @@ mlVARsample <- function(
       
       truePDC_sub <- lapply(random_fam, function(i){getNet(object, "temporal", nonsig = "show", subject = i)})
       truePCC_sub <- lapply(random_fam, function(i){getNet(object, "contemporaneous", nonsig = "show", subject = i)})
-      estPDC_sub <- lapply(1:nSubject2, function(i){getNet(object, "temporal", nonsig = "show", subject = i)})
-      estPCC_sub <- lapply(1:nSubject2, function(i){getNet(object, "contemporaneous", nonsig = "show", subject = i)})
+      estPDC_sub <- lapply(1:nSubject2, function(i){getNet(Res, "temporal", nonsig = "show", subject = i)})
+      estPCC_sub <- lapply(1:nSubject2, function(i){getNet(Res, "contemporaneous", nonsig = "show", subject = i)})
       
       perSubject <- lapply(1:nSubject2, function(i){
         
