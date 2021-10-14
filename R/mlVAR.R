@@ -368,27 +368,42 @@ mlVAR <- function(
   augData <- data
   
   # Add missing rows for missing beeps
-  beepsPerDay <-  eval(substitute(dplyr::summarize_(data %>% group_by_(idvar,dayvar), 
-                                                    first = ~ min(beepvar,na.rm=TRUE),
-                                                    last = ~ max(beepvar,na.rm=TRUE)), 
-                                  list(beepvar = as.name(beepvar))))
+ # beepsPerDay <-  eval(substitute(dplyr::summarize_(data %>% group_by_(idvar,dayvar), 
+ #                                                   first = ~ min(beepvar,na.rm=TRUE),
+ #                                                   last = ~ max(beepvar,na.rm=TRUE)), 
+ #                                 list(beepvar = as.name(beepvar))))
+  
+   beepsPerDay <-  dplyr::summarize(data %>% group_by(.data[[idvar]],.data[[dayvar]]), 
+                                                    first = min(.data[[beepvar]],na.rm=TRUE),
+                                                    last = max(.data[[beepvar]],na.rm=TRUE))
+ 
   
   # all beeps:
   allBeeps <- expand.grid(unique(data[[idvar]]),unique(data[[dayvar]]),seq(min(data[[beepvar]],na.rm=TRUE),max(data[[beepvar]],na.rm=TRUE)),stringsAsFactors = FALSE) 
   names(allBeeps) <- c(idvar,dayvar,beepvar)
   
   # Left join the beeps per day:
-  allBeeps <- eval(substitute({
-    allBeeps %>% left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
-      group_by_(idvar,dayvar) %>% filter_(~BEEP >= first, ~BEEP <= last)%>%
-      arrange_(idvar,dayvar,beepvar)
-  },  list(BEEP = as.name(beepvar))))
+  #allBeeps <- eval(substitute({
+  #  allBeeps %>% left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
+  #    group_by_(idvar,dayvar) %>% filter_(~BEEP >= first, ~BEEP <= last)%>%
+  #    arrange_(idvar,dayvar,beepvar)
+  #},  list(BEEP = as.name(beepvar))))
+  
+   allBeeps <- allBeeps %>% dplyr::left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
+      dplyr::group_by(.data[[idvar]],.data[[dayvar]]) %>% dplyr::filter(.data[[beepvar]] >= .data$first, .data[[beepvar]] <= .data$last)%>%
+      dplyr::arrange(.data[[idvar]],.data[[dayvar]],.data[[beepvar]])
   
   
-  # Enter NA's:
-  augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
-    arrange_(idvar,dayvar,beepvar)
   
+  ## Enter NA's:
+  #augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
+  #  arrange_(idvar,dayvar,beepvar)
+  
+   # Enter NA's:
+  augData <- augData %>% dplyr::right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
+    arrange(.data[[idvar]],.data[[dayvar]],.data[[beepvar]])
+  
+
   # Add the predictors (when estimatior != JAGS or Mplus):
   if (!estimator %in% c("Mplus","JAGS")){
     for (i in seq_len(nrow(UniquePredModel))){
@@ -439,6 +454,8 @@ mlVAR <- function(
   
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
+    
+    browser()
     Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal,
                       nCores=nCores, AR = AR)
     # } else if (estimator == "stan"){
