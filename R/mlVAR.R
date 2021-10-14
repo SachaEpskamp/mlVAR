@@ -455,7 +455,6 @@ mlVAR <- function(
   #### RUN THE MODEL ###
   if (estimator == "lmer"){
     
-    browser()
     Res <- lmer_mlVAR(PredModel,augData,idvar,verbose=verbose, contemporaneous=contemporaneous,temporal=temporal,
                       nCores=nCores, AR = AR)
     # } else if (estimator == "stan"){
