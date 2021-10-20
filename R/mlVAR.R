@@ -373,10 +373,23 @@ mlVAR <- function(
  #                                                   last = ~ max(beepvar,na.rm=TRUE)), 
  #                                 list(beepvar = as.name(beepvar))))
   
+  # Check for errors in data:
+  beepsummary <- data %>% group_by(.data[[idvar]],.data[[dayvar]],.data[[beepvar]]) %>% tally
+  if (any(beepsummary$n!=1)){
+    print_and_capture <- function(x)
+    {
+      paste(capture.output(print(x)), collapse = "\n")
+    }
+    
+    warning(paste0("Some beeps are recorded more than once! Results are likely unreliable.\n\n",print_and_capture(
+      beepsummary %>% filter(.data[["n"]]!=1) %>% select(.data[[idvar]],.data[[dayvar]],.data[[beepvar]]) %>% as.data.frame
+    )))
+  }
+  
    beepsPerDay <-  dplyr::summarize(data %>% group_by(.data[[idvar]],.data[[dayvar]]), 
                                                     first = min(.data[[beepvar]],na.rm=TRUE),
                                                     last = max(.data[[beepvar]],na.rm=TRUE))
- 
+
   
   # all beeps:
   allBeeps <- expand.grid(unique(data[[idvar]]),unique(data[[dayvar]]),seq(min(data[[beepvar]],na.rm=TRUE),max(data[[beepvar]],na.rm=TRUE)),stringsAsFactors = FALSE) 
@@ -403,6 +416,8 @@ mlVAR <- function(
   augData <- augData %>% dplyr::right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
     arrange(.data[[idvar]],.data[[dayvar]],.data[[beepvar]])
   
+  
+  augData %>% filter(id==11,day==1,beep==1)
 
   # Add the predictors (when estimatior != JAGS or Mplus):
   if (!estimator %in% c("Mplus","JAGS")){
