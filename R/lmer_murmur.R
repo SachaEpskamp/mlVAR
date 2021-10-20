@@ -55,9 +55,10 @@ lmer_mlVAR <-
       # Run loop:
       lmerResults <-  parLapply(cl, seq_along(Outcomes), function(i){
         # submodel:
-        subModel <-  dplyr::filter_(model, ~ dep == Outcomes[i])
+   
+        subModel <-  dplyr::filter(model, .data[['dep']] == Outcomes[i])
         if (AR){
-          subModel <- subModel %>% filter_(~dep == pred | type == "between")
+          subModel <- subModel %>% filter(.data[['dep']] == .data[['pred']] | type == "between")
         }
         
         # Setup model:
@@ -99,11 +100,13 @@ lmer_mlVAR <-
       
       for (i in seq_along(Outcomes)){
         # submodel:
-        subModel <- model %>% filter_(~ dep == Outcomes[i])
+        subModel <- model %>% filter(.data[['dep']] == Outcomes[i]) # model %>% filter_(~ dep == Outcomes[i])
+        
+        
         
         # Remove cross-lagged if AR = TRUE:
         if (AR){
-          subModel <- subModel %>% filter_(~dep == pred | type == "between")
+          subModel <-  subModel %>% filter(.data[['dep']] == .data[['pred']] | type == "between") # subModel %>% filter_(~dep == pred | type == "between")
         }
         
         # Setup model:
@@ -186,7 +189,7 @@ lmer_mlVAR <-
     #       
     ### Second as GGM:
     # Which predictor codes are the variables:
-    modSum <- model %>% filter_(~type == "between") %>% group_by_("pred") %>% dplyr::summarize_(id = ~unique(predID))
+    modSum <- model %>% filter(.data[['type']] == "between") %>% group_by(.data[["pred"]]) %>% dplyr::summarize(id = unique(.data[['predID']]))
     IDs <- modSum$id[match(Outcomes, modSum$pred)]
     
     # Construct gamma and D:
@@ -244,9 +247,9 @@ lmer_mlVAR <-
       
       ### Compute Betas ###
       # Obtain the names of predictors in order Outcomes / lag:
-      withinMod <- model %>% filter_(~type == "within") %>%
-        group_by_("pred", "lag") %>% dplyr::summarise_(id = ~unique(predID)) %>%
-        mutate_(ord = ~match(pred,Outcomes)) %>% ungroup %>% arrange_("ord","lag")
+      withinMod <- model %>% filter(.data[['type']] == "within") %>%
+        group_by(.data[["pred"]],.data[["lag"]]) %>% dplyr::summarise(id = unique(.data[['predID']])) %>%
+        mutate(ord = match(.data[['pred']],Outcomes)) %>% ungroup %>% arrange(.data[["ord"]],.data[["lag"]])
       
       predID <- withinMod$id
       # predLab <- paste0(withinMod$pred,"_lag",withinMod$lag)
