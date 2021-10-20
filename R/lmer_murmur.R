@@ -58,7 +58,7 @@ lmer_mlVAR <-
    
         subModel <-  dplyr::filter(model, .data[['dep']] == Outcomes[i])
         if (AR){
-          subModel <- subModel %>% filter(.data[['dep']] == .data[['pred']] | type == "between")
+          subModel <- subModel %>% filter(.data[['dep']] == .data[['pred']] | .data[["type"]] == "between")
         }
         
         # Setup model:
@@ -106,7 +106,7 @@ lmer_mlVAR <-
         
         # Remove cross-lagged if AR = TRUE:
         if (AR){
-          subModel <-  subModel %>% filter(.data[['dep']] == .data[['pred']] | type == "between") # subModel %>% filter_(~dep == pred | type == "between")
+          subModel <-  subModel %>% filter(.data[['dep']] == .data[['pred']] | .data[['type']] == "between") # subModel %>% filter_(~dep == pred | type == "between")
         }
         
         # Setup model:

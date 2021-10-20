@@ -416,8 +416,6 @@ mlVAR <- function(
   augData <- augData %>% dplyr::right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
     arrange(.data[[idvar]],.data[[dayvar]],.data[[beepvar]])
   
-  
-  augData %>% filter(id==11,day==1,beep==1)
 
   # Add the predictors (when estimatior != JAGS or Mplus):
   if (!estimator %in% c("Mplus","JAGS")){
