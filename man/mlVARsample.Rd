@@ -1,5 +1,6 @@
 \name{mlVARsample}
 \alias{mlVARsample}
+\alias{summary.mlVARsample}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Simulator function given an mlVAR object
@@ -8,26 +9,24 @@ Simulator function given an mlVAR object
 Simulates data based on an mlVAR object, estimates the mlVAR network model based on the simulated data and compares the estimated network to the mlVAR object network.  
 }
 \usage{
-mlVARsample(object, nTime = c(25, 50, 100, 200), nind = 100, nmissing = 0,
-            measures = c("sensitivity", "specificity", "bias", "precision"), 
-            nReps = 100, nCores = 1, ...)
+mlVARsample(object, nTime = c(25,50,100,200), nSample = 100, pMissing = 0, 
+  nReps = 100, nCores = 1, ...)
+
+\method{summary}{mlVARsample}(object, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{object}{
-mlVAR object
+mlVAR object, or mlVARsample object in the summary method
 }
   \item{nTime}{
 Vector with number of time points to test. 
 }
-  \item{nind}{
+  \item{nSample}{
 Number of individuals in the dataset. It is possible to decrease the number of individuals compared to the individuals in the mlVAR object. However, it is not possible to have more individuals than there are in the mlVAR object.     
 }
-  \item{nmissing}{
+  \item{pMissing}{
 Percentage of missing data to be simulated.   
-}
-  \item{measures}{
-Network comparison measures to return next to the correlation. It is possible to obtain the \code{"sensitivity"}, \code{"specificity"}, \code{"bias"}, and \code{"precision"}.     
 }
   \item{nReps}{
 Number of repetitions for each condition. 
@@ -62,20 +61,19 @@ Sacha Epskamp (2020). graphicalVAR: Graphical VAR for Experience Sampling Data. 
 \dontrun{
 ### Small example ###
 # Simulate data:
-Model <- mlVARsim(nPerson = 50, nNode = 3, nTime = 50, lag=1)
+Model <- mlVARsim(nPerson = 100, nNode = 3, nTime = 50, lag=1)
 
 # Estimate using correlated random effects:
-fit <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, temporal = "correlated")
+fit <- mlVAR(Model$Data, vars = Model$vars, 
+             idvar = Model$idvar, lags = 1, 
+             temporal = "correlated")
 
-# Sample: 
-samples <- mlVARsample(fit, nTime = 100, nind = 100, nmissing = 0,
-            measures = c("sensitivity", "bias"), 
-            nReps = 10, nCores = 1)
-# Will only return the network comparison measures sensitivity and bias (next to the correlation)  
+# Sample from fitted model: 
+samples <- mlVARsample(fit, nTime = 50, nSample = 50, pMissing = 0.1,
+                       measures = c("sensitivity", "bias"), 
+                       nReps = 5, nCores = 1)
 
-# Simulate with and without missingness 
-samples <- mlVARsample(fit, nTime = 100, nind = 100, nmissing = c(0, 0.1),
-            measures = c("sensitivity", "bias"), 
-            nReps = 10, nCores = 1)
-}
+# Summarize results:
+summary(samples)
 } 
+}

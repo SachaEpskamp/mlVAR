@@ -83,6 +83,9 @@ summary.mlVAR <- function(
     pcorSD <- object$results$Theta$pcor$SD
     UT <- upper.tri(cor)
     P <- object$results$Gamma_Theta$P
+    if (is.null(P)){
+      P <- matrix(NA,nrow(UT),ncol(UT))
+    }
 
     cat("\n\nContemporaneous effects (posthoc estimated):\n")
     ContDF <- data.frame(
@@ -197,13 +200,18 @@ plot.mlVAR <-
     type <- match.arg(type)
     nonsig <- match.arg(nonsig)
     if (nonsig == "default"){
-      nonsig <- "hide"
-      if (!partial){
-        nonsig <- "show"
+      if (!SD){
+        nonsig <- "hide"
+        if (!partial){
+          nonsig <- "show"
+        }
+        if (!missing(subject)){
+          nonsig <- "show"
+        }
+      } else {
+        nonsig <- 'show'
       }
-      if (!missing(subject)){
-        nonsig <- "show"
-      }
+
       if (verbose){
         message(paste0("'nonsig' argument set to: '",nonsig,"'"))
       }
