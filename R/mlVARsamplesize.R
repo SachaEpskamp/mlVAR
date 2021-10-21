@@ -372,7 +372,9 @@ summary.mlVARsample <- function(object, ...){
     }
   }
   
-  object %>% group_by(.data[["network"]],.data[["nTime"]],.data[["nSample"]],.data[["pMissing"]]) %>%
+  res <- object %>% group_by(.data[["network"]],.data[["nTime"]],.data[["nSample"]],.data[["pMissing"]]) %>%
     summarise(across(c("sensitivity","specificity","precision","correlation","bias"), ~ sumfun(.x))) %>%
-    as.data.frame %>% return
+    as.data.frame
+  
+  return(res)
 }
