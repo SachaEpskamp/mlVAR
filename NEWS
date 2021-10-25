@@ -1,3 +1,6 @@
+Changes in Version 0.5.1
+  - Fixed remaining deprecated dplyr functions
+
 Changes in Version 0.5
   - The 'mlVARsample' function has been added to mlVAR
   - Added Myrthe Veenman to contributor list

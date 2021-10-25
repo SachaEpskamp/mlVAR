@@ -100,13 +100,13 @@ lmer_mlVAR <-
       
       for (i in seq_along(Outcomes)){
         # submodel:
-        subModel <- model %>% filter(.data[['dep']] == Outcomes[i]) # model %>% filter_(~ dep == Outcomes[i])
+        subModel <- model %>% filter(.data[['dep']] == Outcomes[i]) 
         
         
         
         # Remove cross-lagged if AR = TRUE:
         if (AR){
-          subModel <-  subModel %>% filter(.data[['dep']] == .data[['pred']] | .data[['type']] == "between") # subModel %>% filter_(~dep == pred | type == "between")
+          subModel <-  subModel %>% filter(.data[['dep']] == .data[['pred']] | .data[['type']] == "between") 
         }
         
         # Setup model:

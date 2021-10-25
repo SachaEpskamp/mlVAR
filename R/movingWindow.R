@@ -57,7 +57,7 @@ movingWindow <- function(
   if (estimator=="lmmlasso"){
     FullResults <- list(
       Result = lapply(Results,"[[","Result"),
-      Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by_("dep")  %>%
+      Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
         summarize_each(funs(mean(., na.rm=TRUE)))
     )
 
@@ -70,11 +70,11 @@ movingWindow <- function(
         summarize_each(funs(mean(., na.rm=TRUE))),
       FixEf_SE = Results %>% lapply("[[","FixEf_SE") %>% bind_rows() %>% 
         summarize_each(funs(mean(., na.rm=TRUE))),
-      Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by_("dep")  %>%
+      Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
         summarize_each(funs(mean(., na.rm=TRUE))),
-      se.Coef = Results %>% lapply("[[","se.Coef") %>% bind_rows() %>%group_by_("dep")  %>%
+      se.Coef = Results %>% lapply("[[","se.Coef") %>% bind_rows() %>%group_by(.data[["dep"]])  %>%
         summarize_each(funs(mean(., na.rm=TRUE))),
-      pvals = Results %>% lapply("[[","pvals") %>% bind_rows() %>% group_by_("dep")  %>%
+      pvals = Results %>% lapply("[[","pvals") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
         summarize_each(funs(mean(., na.rm=TRUE))),
       ranEffects = Results %>% lapply("[[", "ranEffects") %>% lapply(function(x){
         x <- x[[1]]
@@ -83,9 +83,9 @@ movingWindow <- function(
       }) %>% bind_rows() %>% group_by(id) %>% summarize_each(funs(mean(., na.rm=TRUE))),
       ranPerID = lapply(seq_along(Results[[1]]$ranPerID), function(i){
         Results %>% lapply(function(x)x$ranPerID[[i]]) %>% 
-          bind_rows() %>% group_by_("dep") %>% summarize_each(funs(mean(., na.rm=TRUE)))
+          bind_rows() %>% group_by(.data[["dep"]]) %>% summarize_each(funs(mean(., na.rm=TRUE)))
       }),
-      Variance = Results %>% lapply("[[","Variance") %>% bind_rows() %>% group_by_("dep") %>% 
+      Variance = Results %>% lapply("[[","Variance") %>% bind_rows() %>% group_by(.data[["dep"]]) %>% 
         summarize_each(funs(mean(., na.rm=TRUE)))
     )
   }

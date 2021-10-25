@@ -368,10 +368,7 @@ mlVAR <- function(
   augData <- data
   
   # Add missing rows for missing beeps
- # beepsPerDay <-  eval(substitute(dplyr::summarize_(data %>% group_by_(idvar,dayvar), 
- #                                                   first = ~ min(beepvar,na.rm=TRUE),
- #                                                   last = ~ max(beepvar,na.rm=TRUE)), 
- #                                 list(beepvar = as.name(beepvar))))
+
   
   # Check for errors in data:
   beepsummary <- data %>% group_by(.data[[idvar]],.data[[dayvar]],.data[[beepvar]]) %>% tally
@@ -396,11 +393,6 @@ mlVAR <- function(
   names(allBeeps) <- c(idvar,dayvar,beepvar)
   
   # Left join the beeps per day:
-  #allBeeps <- eval(substitute({
-  #  allBeeps %>% left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
-  #    group_by_(idvar,dayvar) %>% filter_(~BEEP >= first, ~BEEP <= last)%>%
-  #    arrange_(idvar,dayvar,beepvar)
-  #},  list(BEEP = as.name(beepvar))))
   
    allBeeps <- allBeeps %>% dplyr::left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
       dplyr::group_by(.data[[idvar]],.data[[dayvar]]) %>% dplyr::filter(.data[[beepvar]] >= .data$first, .data[[beepvar]] <= .data$last)%>%
@@ -410,7 +402,6 @@ mlVAR <- function(
   
   ## Enter NA's:
   #augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
-  #  arrange_(idvar,dayvar,beepvar)
   
    # Enter NA's:
   augData <- augData %>% dplyr::right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%

@@ -88,7 +88,7 @@ Mplus_mlVAR <-
     mplusCodes <- gsub("@@CLUSTER@@",idvar,mplusCodes)
     
     # Replace lagged:
-    lags <- model %>% dplyr::group_by_("pred") %>% summarize_(lag=~max(lag))
+    lags <- model %>% dplyr::group_by(.data[["pred"]]) %>% summarize(lag=max(.data[['lag']]))
     mplusCodes <- gsub("@@LAGGED@@",paste0(lags$pred,"(",lags$lag,")",collapse=" "),mplusCodes)
     
     # Replace iterations:

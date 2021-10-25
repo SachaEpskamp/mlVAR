@@ -83,7 +83,7 @@ importMplus <- function(outfile){
     stop("Temporal model is a mixture of fixed/orthogonal/correlated")
   }
   
-  subModel <- mlVARinfo %>% dplyr::filter_(~model == "temporal")
+  subModel <- mlVARinfo %>% dplyr::filter(.data[['model']] == "temporal")
   # Gather the parameter samples:
   BetaFixed <- array(,c(nOut, nPred, nLag,nSample))
   BetaSD <- array(0,c(nOut, nPred, nLag,nSample))

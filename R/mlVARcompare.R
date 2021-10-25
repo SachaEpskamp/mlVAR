@@ -62,10 +62,10 @@ print.mlVARcompare <- function(x,...){
   
   # Overal fit:
   cat("\nCounts for best model fit over all variables\n")
-  overalTab <- do.call(rbind,x) %>% group_by_("var") %>%
-    mutate_(bestAIC = ~aic == min(aic), bestBIC = ~bic == min(bic)) %>%
+  overalTab <- do.call(rbind,x) %>% group_by(.data[["var"]]) %>%
+    mutate(bestAIC = .data[['aic']] == min(.data[['aic']]), bestBIC = .data[['bic']] == min(.data[['bic']])) %>%
     ungroup %>% 
-    group_by_("lags","temporal","temporalModel") %>% summarize_(nAIC = ~sum(bestAIC), nBIC = ~sum(bestBIC)) %>%
+    group_by(.data[["lags"]],.data[["temporal"]],.data[["temporalModel"]]) %>% summarize(nAIC = sum(.data[['bestAIC']]), nBIC = sum(.data[['bestBIC']])) %>%
     as.data.frame
   print(overalTab,row.names = FALSE)
   

@@ -22,7 +22,7 @@ parSim <- function(
   
   # Exclude cases:
   if (!missing(exclude)){
-    AllConditions <- AllConditions %>% filter_(.dots = exclude)
+    suppressWarnings(AllConditions <- AllConditions %>% filter_(.dots = exclude))
   }
   
   

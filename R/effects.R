@@ -53,7 +53,7 @@ fixedEffects <- function(object,digits=5){
   
   if (any(duplicated(df[c("Response","Predictor")]))){
     message("Duplicate effects found (possibly due to moving window approach), averaging effect, se and p-value.")
-    df <- df %>% group_by_("Response","Predictor") %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("effect","se","p"))
+    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("effect","se","p")))
   }
 
   # Remove NA rows:
@@ -91,7 +91,7 @@ randomEffects<- function(object, digits=5){
   
   if (any(duplicated(df[c("Response","Predictor")]))){
     message("Duplicate effects found (possibly due to moving window approach), averaging variance.")
-    df <- df %>% group_by_("Response","Predictor") %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("variance"))
+    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("variance")))
   }
   
   # Remove NA rows:

@@ -142,7 +142,7 @@ mlVAR0 <- function(
   if (laginteractions != "none" || !missing(maxTimeDiff)){
     if (missing(timevar)) stop("'timevar' needed to include time difference")
     
-    call <- substitute(augData %>% group_by_(idvar) %>% mutate(LAGDIFF = as.numeric(c(NA,difftime(x[-1],x[-length(x)],units="hours")))),
+    call <- substitute(augData %>% group_by(.data[['idvar']]) %>% mutate(LAGDIFF = as.numeric(c(NA,difftime(x[-1],x[-length(x)],units="hours")))),
                        list(x = as.name(timevar)))
     augData <- eval(call)
     
@@ -176,7 +176,7 @@ mlVAR0 <- function(
   }
   
   if ( !missing(maxTimeDiff)){
-    augData <- augData %>% filter_(~LAGDIFF < maxTimeDiff)
+    augData <- augData %>% filter(.data[['LAGDIFF']] < maxTimeDiff)
   }
   
   ### RUN NODEWISE ANALYSES ###
