@@ -70,7 +70,6 @@ fit <- mlVAR(Model$Data, vars = Model$vars,
 
 # Sample from fitted model: 
 samples <- mlVARsample(fit, nTime = 50, nSample = 50, pMissing = 0.1,
-                       measures = c("sensitivity", "bias"), 
                        nReps = 5, nCores = 1)
 
 # Summarize results:
