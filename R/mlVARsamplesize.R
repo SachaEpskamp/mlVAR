@@ -15,6 +15,17 @@ mlVARsample <- function(
   if (!identical(object$input$lags,1)){
     stop("Only supported for lags = 1")
   }
+  
+  stationary <- sapply(object$results$Beta$subject,
+                       function(x){
+                         ev <- eigen(x[,,1])$values
+                         all(Re(ev)^2 + Im(ev)^2 < 1)
+                       })
+  
+  if(length(which(!stationary)) >= 1){
+    warning(paste("Non-stationary Beta matrix detected for subject(s): "), paste(which(!stationary), collapse = ", "))
+  }
+  
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args)==0){
     args <- 1
