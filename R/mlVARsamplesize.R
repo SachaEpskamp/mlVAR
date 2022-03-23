@@ -16,16 +16,6 @@ mlVARsample <- function(
     stop("Only supported for lags = 1")
   }
   
-  stationary <- sapply(object$results$Beta$subject,
-                       function(x){
-                         ev <- eigen(x[,,1])$values
-                         all(Re(ev)^2 + Im(ev)^2 < 1)
-                       })
-  
-  if(length(which(!stationary)) >= 1){
-    warning(paste("Non-stationary Beta matrix detected for subject(s): "), paste(which(!stationary), collapse = ", "))
-  }
-  
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args)==0){
     args <- 1
@@ -88,12 +78,17 @@ mlVARsample <- function(
   
   # Beta matrices:
   Beta <- object$results$Beta$subject
-  
+
   # Check if all are stationary:
   stationary <- sapply(Beta,function(b){
     ev <- eigen(b[,,1])$values
     all(Re(ev)^2 + Im(ev)^2 < 1)
   })
+  
+  
+  if(length(which(!stationary)) >= 1){
+    warning(paste("Non-stationary Beta matrix detected for subject(s): "), paste(which(!stationary), collapse = ", "))
+  }
   
   # Inverse thetas:
   invTheta <- lapply(object$results$Theta$cov$subject,solve)
