@@ -16,7 +16,7 @@ fixedEffects <- function(object,digits=5){
     return(object$fixedEffects)
   }
   
-  if (class(object)!="mlVAR0"){
+  if (!is(object,"mlVAR0")){
     stop("Only works for mlVAR0 objects.")
   }
   
@@ -72,7 +72,7 @@ randomEffects<- function(object, digits=5){
   variance <- NULL
   
   
-  if (class(object)!="mlVAR0"){
+  if (!is(object,"mlVAR0")){
     stop("Only works for mlVAR0 objects.")
   }
   
