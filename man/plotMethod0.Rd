@@ -1,6 +1,5 @@
 \name{plot.mlVAR0}
 \alias{plot.mlVAR0}
-\alias{plot.mlVARsim0}
 
 \title{
   Plot Method for mlVAR0
@@ -13,8 +12,6 @@
 \usage{
   \method{plot}{mlVAR0}(x, type = c("fixed", "SD", "subject"), lag = 1,
                  subject, order, onlySig = FALSE, alpha, ...)
-  \method{plot}{mlVARsim0}(x, type = c("fixed", "SD", "subject"), lag = 1,
-                 subject, order,  ...)
 }
 
 \arguments{

@@ -136,40 +136,40 @@ print.mlVAR0 <- function(x,...) summary.mlVAR0(x,...)
 
 
 ### Model plot method:
-
-plot.mlVARsim0 <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
-  if (type[[1]]=="subject" & missing(subject)){
-    stop("'subject' is needed to plot individual network")
-  }
-  
-  # Nodes <- rownames(x$fixedEffects)
-  if (type[[1]]=="fixed"){
-
-
-    fixef <- x$fixedEffects
-    Nodes <- x$vars
-    
-    Graph <- qgraph(t(fixef), labels=Nodes, ...)
-    
-  } else if (type[[1]]=="se"){
-    
-    stop("No standard errors in true model")
-
-    
-  } else if (type[[1]]=="SD"){
-    
-    ranef <- x$randomEffectsSD
-    Nodes <- x$vars
-
-    Graph <- qgraph(t(ranef), labels=Nodes, ...)
-    
-  }  else if (type[[1]]=="subject"){
-    fixef <- x$fixedEffects
-    Nodes <- x$vars
-    Net <- fixef + x$randomEffects[[subject]]
-    Graph <- qgraph(t(Net), labels=Nodes, ...)
-    
-  } else stop("'type' is not supported")
-  
-  invisible(Graph)
-}
+# 
+# plot.mlVARsim0 <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
+#   if (type[[1]]=="subject" & missing(subject)){
+#     stop("'subject' is needed to plot individual network")
+#   }
+#   
+#   # Nodes <- rownames(x$fixedEffects)
+#   if (type[[1]]=="fixed"){
+# 
+# 
+#     fixef <- x$fixedEffects
+#     Nodes <- x$vars
+#     
+#     Graph <- qgraph(t(fixef), labels=Nodes, ...)
+#     
+#   } else if (type[[1]]=="se"){
+#     
+#     stop("No standard errors in true model")
+# 
+#     
+#   } else if (type[[1]]=="SD"){
+#     
+#     ranef <- x$randomEffectsSD
+#     Nodes <- x$vars
+# 
+#     Graph <- qgraph(t(ranef), labels=Nodes, ...)
+#     
+#   }  else if (type[[1]]=="subject"){
+#     fixef <- x$fixedEffects
+#     Nodes <- x$vars
+#     Net <- fixef + x$randomEffects[[subject]]
+#     Graph <- qgraph(t(Net), labels=Nodes, ...)
+#     
+#   } else stop("'type' is not supported")
+#   
+#   invisible(Graph)
+# }

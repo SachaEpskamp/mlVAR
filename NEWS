@@ -1,3 +1,6 @@
+Changes in Version 0.5.2
+  - Removed deprecated function mlVARsim0
+
 Changes in Version 0.5.1
   - Fixed remaining deprecated dplyr functions
 
