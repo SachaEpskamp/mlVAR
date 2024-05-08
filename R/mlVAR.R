@@ -73,7 +73,9 @@ mlVAR <- function(
   chains = nCores,
   signs,
   
-  orthogonal # Used for backward competability
+  orthogonal, # Used for backward competability
+  
+  trueMeans # Optional data frame with true personwise means to plug in
   
   # nCores = 1,
   # JAGSexport = FALSE, # Exports jags files
@@ -393,12 +395,29 @@ mlVAR <- function(
   names(allBeeps) <- c(idvar,dayvar,beepvar)
   
   # Left join the beeps per day:
-  
    allBeeps <- allBeeps %>% dplyr::left_join(beepsPerDay, by = c(idvar,dayvar)) %>% 
       dplyr::group_by(.data[[idvar]],.data[[dayvar]]) %>% dplyr::filter(.data[[beepvar]] >= .data$first, .data[[beepvar]] <= .data$last)%>%
       dplyr::arrange(.data[[idvar]],.data[[dayvar]],.data[[beepvar]])
   
   
+   ### Check true means structure:
+   if (!missing(trueMeans)){
+     # Check if ID variables is in the trueMeans object:
+     if (!idvar %in% names(trueMeans)){
+       stop("ID variable not found in 'trueMeans' object.")
+     }
+     
+     # check if all variables are in trueMeans object:
+     if (!all(vars %in% names(trueMeans))){
+       stop("Not all variables in 'vars' are found in 'trueMeans' object.")
+     }
+     
+     # Check if all IDs are in trueMeans object:
+     if (!all(unique(data[[idvar]]) %in% unique(trueMeans[[idvar]]))){
+       stop("Not all IDs in data are found in 'trueMeans' object.")
+     }
+   }
+   
   
   ## Enter NA's:
   #augData <- augData %>% right_join(allBeeps, by = c(idvar,dayvar,beepvar)) %>%
@@ -415,7 +434,12 @@ mlVAR <- function(
       
       if (UniquePredModel$type[i] == "between"){
         if (estimator == "lmer"){
-          augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$pred[i]]],augData[[idvar]], FUN = aveMean)          
+          if (missing(trueMeans)){
+            augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$pred[i]]],augData[[idvar]], FUN = aveMean)            
+          } else {
+            augData[[UniquePredModel$predID[i]]] <- trueMeans[[UniquePredModel$pred[i]]][match(augData[[idvar]],trueMeans[[idvar]])]
+          }
+          
         }
       } else {
         # First include:
@@ -424,7 +448,17 @@ mlVAR <- function(
         # Then center:
         ### CENTERING ONLY NEEDED WHEN ESTIMATOR != JAGS ###
         if (!estimator %in% c("JAGS")){
-          augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], FUN = function(xx)aveCenter(xx,scale=scaleWithin))
+          if (missing(trueMeans)){
+            augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], FUN = function(xx)aveCenter(xx,scale=scaleWithin))
+          } else {
+            augData[[UniquePredModel$predID[i]]] <- augData[[UniquePredModel$predID[i]]] - trueMeans[[UniquePredModel$pred[i]]][match(augData[[idvar]],trueMeans[[idvar]])]
+            if (scaleWithin){
+              augData[[UniquePredModel$predID[i]]] <- ave(augData[[UniquePredModel$predID[i]]],augData[[idvar]], aveScaleNoCenter)
+            } 
+              
+              
+          }
+          
         } 
       }
       
