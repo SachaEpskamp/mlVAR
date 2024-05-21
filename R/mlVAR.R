@@ -323,6 +323,15 @@ mlVAR <- function(
     
   }
   
+  # If trueMeans is supplied, within-person center and re-add true means:
+  if (!missing(trueMeans)){
+    for (v in vars){
+        data[[v]] <-  ave(data[[v]],data[[idvar]], FUN = function(xx)aveCenter(xx)) + trueMeans[[v]][match(data[[idvar]], trueMeans[[idvar]])]
+    }
+  }
+
+    
+  # Standardize across all variables:
   if (scale){
     for (v in vars){
       data[[v]] <- Scale(data[[v]])
@@ -417,6 +426,8 @@ mlVAR <- function(
        stop("Not all IDs in data are found in 'trueMeans' object.")
      }
    }
+   
+    # FIXME: Need to center dependent variable and add true means!
    
   
   ## Enter NA's:
