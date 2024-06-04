@@ -1,3 +1,6 @@
+Changes in Version 0.5.3
+  - Random effect SDs of Gamma_theta stored in $results$Gamma_Theta$SD are now based on analytric standard deviations
+
 Changes in Version 0.5.2
   - Removed deprecated function mlVARsim0
 

@@ -531,6 +531,16 @@ lmer_mlVAR <-
       colnames(Gamma_Theta_fixed) <- Outcomes
       rownames(Gamma_Theta_fixed) <- Outcomes
       
+      
+      # Random effect SDs:
+      Gamma_Theta_SDs <- matrix(0, nVar, nVar)
+      for (i in 1:nVar){
+        Gamma_Theta_SDs[i,-i] <- attr(lme4::VarCorr(lmerResults2[[i]])[[idvar]], "stddev")
+        
+      }
+      colnames(Gamma_Theta_SDs) <- Outcomes
+      rownames(Gamma_Theta_SDs) <- Outcomes
+      
       # SE; SD; P; subject
       
       # SE:
@@ -541,8 +551,11 @@ lmer_mlVAR <-
       colnames(Gamma_Theta_SE) <- Outcomes
       rownames(Gamma_Theta_SE) <- Outcomes
       
+      ##
+      
+      
       # P:
-      Gamma_Theta_P <- 2*(1-pnorm(abs(Gamma_Theta_fixed/Gamma_Theta_SE)))
+      Gamma_Theta_P <- 2*(1-pnorm(abs(Gamma_Theta_fixed/Gamma_Theta_SE))) # FIXME: SHould be a t-distribution?
       colnames(Gamma_Theta_P) <- Outcomes
       rownames(Gamma_Theta_P) <- Outcomes
       
@@ -614,12 +627,13 @@ lmer_mlVAR <-
         cov = modelArray(mean=Theta_fixed_cov,subject = Theta_subject_cov),
         prec = modelArray(mean=Theta_fixed_prec,subject = Theta_subject_prec)
       )
-      
+
       Results[["Gamma_Theta"]] <- modelArray(
         mean = Gamma_Theta_fixed,
         subject = Gamma_Theta_subject,
         SE = Gamma_Theta_SE,
-        P = Gamma_Theta_P
+        P = Gamma_Theta_P,
+        SD = Gamma_Theta_SDs
       )
       
     }
