@@ -47,7 +47,7 @@ simGraph <- function(
 # 3. Shrink all beta's untill all eigens are in unit circle.
 
 
-mlVARsim <- function(
+mlVARsim_test <- function(
   # Simulation setup:
   nPerson = 10, # # of persons.
   nNode = 5, # # of nodes 
@@ -97,7 +97,7 @@ mlVARsim <- function(
   # Omega <- genPositiveDefMat(nNode + nTemporal, "onion", rangeVar = c(1,1))$Sigma
   
   # Generate SD and scale:
-  SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nNode)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nNode)))
+  SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nTemporal)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nTemporal)))
   Omega <- diag(SD) %*%Omega %*% diag(SD)
 
   # Generate fixed contemporaneous:
