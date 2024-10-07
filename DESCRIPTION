@@ -14,3 +14,4 @@ Description: Estimates the multi-level vector autoregression model on time-serie
              Three network structures are obtained: temporal networks, contemporaneous
              networks and between-subjects networks.
 License: GPL-2
+BugReports: https://github.com/SachaEpskamp/mlVAR/issues
