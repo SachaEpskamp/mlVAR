@@ -657,7 +657,8 @@ lmer_mlVAR <-
       output = list(temporal = lmerResults, contemporaneous = lmerResults2),
       fit = fit,
       data = augData,
-      model = model
+      model = model,
+      step1_residuals = resid
       # DIC = samples$BUGSoutput$DIC,
       # DIC_pD = samples$BUGSoutput$pD
     )
