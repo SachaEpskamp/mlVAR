@@ -75,7 +75,9 @@ mlVAR <- function(
   
   orthogonal, # Used for backward competability
   
-  trueMeans # Optional data frame with true personwise means to plug in
+  trueMeans, # Optional data frame with true personwise means to plug in
+  
+  na.rm = TRUE
   
   # nCores = 1,
   # JAGSexport = FALSE, # Exports jags files
@@ -295,7 +297,12 @@ mlVAR <- function(
   
   ### STANDARDIZE DATA ###
   # Test for rank-deficient:
-  X <- as.matrix(na.omit(data[,vars]))
+  if (na.rm){
+    X <- as.matrix(na.omit(data[,vars]))
+  } else {
+    X <- as.matrix(data[,vars])
+  }
+  
   qrX <- qr(X)
   rnk <- qrX$rank
   
@@ -486,7 +493,12 @@ mlVAR <- function(
   # Remove missings from augData:
   if (!estimator %in% c("JAGS","Mplus")){
     Vars <- unique(c(PredModel$dep,PredModel$predID,idvar,beepvar,dayvar))
-    augData <- na.omit(augData[,Vars])
+    if (na.rm){
+      augData <- na.omit(augData[,Vars])
+    } else {
+      augData <- augData[,Vars]
+    }
+    
     PredModel <- PredModel[is.na(PredModel$lag) | (PredModel$lag %in% lags),]
   } # JAGS and Mplus handle missings!
   
