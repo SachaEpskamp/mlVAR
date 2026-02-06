@@ -1,3 +1,6 @@
+Changes in Version 0.5.5
+  - Fixed R CMD check NOTE: no visible binding for global variable 'id' in movingWindow
+
 Changes in Version 0.5.4
   - mlVAR with lmer estimation now returns 'step1_residuals' in the output
 

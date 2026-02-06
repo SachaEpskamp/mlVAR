@@ -1,7 +1,7 @@
 Package: mlVAR
 Type: Package
 Title: Multi-Level Vector Autoregression
-Version: 0.5.4
+Version: 0.5.5
 Depends: R (>= 3.3.0)
 Imports: lme4,  arm, qgraph, dplyr (>= 0.5.0), clusterGeneration, mvtnorm, corpcor, plyr, abind, methods, parallel, MplusAutomation, graphicalVAR, rlang
 Authors@R: c(
