@@ -63,11 +63,13 @@ mlVARsim <- function(
   init_beta_SD = c(0.1,1),
   fixedMuSD = 1,
   shrink_fixed = 0.9,
-  shrink_deviation = 0.9
+  shrink_deviation = 0.9,
+  beta_sparsity = 0.5,
+  pcor_sparsity = 0.5
 ){
   contemporaneous <- "wishart"
   # contemporaneous <- match.arg(contemporaneous)
-  GGMsparsity = 0.5
+  GGMsparsity = pcor_sparsity
   
   if (length(nTime)==1){
     nTime <- rep(nTime,nPerson)
@@ -97,7 +99,7 @@ mlVARsim <- function(
   # Omega <- genPositiveDefMat(nNode + nTemporal, "onion", rangeVar = c(1,1))$Sigma
   
   # Generate SD and scale:
-  SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nNode)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nNode)))
+  SD <- runif(nNode + nTemporal, c(rep(mu_SD[1],nNode),rep(init_beta_SD[1],nTemporal)), c(rep(mu_SD[2],nNode),rep(init_beta_SD[2],nTemporal)))
   Omega <- diag(SD) %*%Omega %*% diag(SD)
 
   # Generate fixed contemporaneous:
@@ -132,8 +134,10 @@ mlVARsim <- function(
   mu_fixed <- rnorm(nNode,0,fixedMuSD)
   # Generate fixed betas:
   beta_fixed <- rnorm(nTemporal,0)
-  # set weakest 50% to zero:
-  beta_fixed[order(abs(beta_fixed))[1:round(nTemporal/2)]] <- 0
+  # set weakest beta_sparsity*100% to zero:
+  if(beta_sparsity != 0){
+    beta_fixed[order(abs(beta_fixed))[1:round(nTemporal * beta_sparsity)]] <- 0
+  }
   # Include auto-regressions:
   mat <- matrix(0,nNode,nNode*lag)
   diag(mat) <- 1
