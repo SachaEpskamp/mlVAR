@@ -93,16 +93,16 @@ NodeWise <- function(
     se.Coef <- as.data.frame(t(FixEf_SE))
     pvals <- as.data.frame(2*(1-pnorm(abs(as.matrix(Coef)/as.matrix(se.Coef)))))
     
-    Coef <- cbind(dep = response, Coef,stringsAsFactors=FALSE)
-    se.Coef <- cbind(dep = response, se.Coef,stringsAsFactors=FALSE)
-    pvals <- cbind(dep = response, pvals,stringsAsFactors=FALSE)
+    Coef <- cbind(dep = response, Coef)
+    se.Coef <- cbind(dep = response, se.Coef)
+    pvals <- cbind(dep = response, pvals)
     
     # Random effects:
     ranEffects <- lme4::ranef(Results)
     ranPerID <- list()
     for (i in seq_len(nrow(ranEffects[[idvar]]))){
       ranPerID[[i]] <- ranEffects[[idvar]][i,,drop=FALSE]
-      ranPerID[[i]] <- cbind(dep = response,ranPerID[[i]],stringsAsFactors=FALSE)
+      ranPerID[[i]] <- cbind(dep = response,ranPerID[[i]])
     }
 
     # Variance of random effects:
@@ -114,7 +114,7 @@ NodeWise <- function(
       Variance <- as.data.frame(t(diag(lme4::VarCorr(Results)[[idvar]])))
     }
 
-    Variance <- cbind(dep =  response, Variance,stringsAsFactors=FALSE)
+    Variance <- cbind(dep =  response, Variance)
     
     
     return(list(

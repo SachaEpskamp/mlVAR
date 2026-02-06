@@ -18,7 +18,7 @@ mlVARcompare <- function(...){
   # Check if vars are same in each object:
   Vars <- lapply(dots,function(x)x$input$vars)
   unVars <- unique(unlist(Vars))
-  if (!all(sapply(Vars,length) == length(unVars)) & !all(sapply(Vars,function(x)all(unVars%in%x)))){
+  if (!all(sapply(Vars,length) == length(unVars)) && !all(sapply(Vars,function(x)all(unVars%in%x)))){
     stop("Models do not have the same variables")
   }
 

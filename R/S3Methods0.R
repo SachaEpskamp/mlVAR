@@ -26,7 +26,7 @@ plot.mlVAR0 <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,ord
   
   type <- match.arg(type)
   
-  if (type[[1]]=="subject" & missing(subject)){
+  if (type[[1]]=="subject" && missing(subject)){
     stop("'subject' is needed to plot individual network")
   }
 
@@ -138,7 +138,7 @@ print.mlVAR0 <- function(x,...) summary.mlVAR0(x,...)
 ### Model plot method:
 # 
 # plot.mlVARsim0 <- function(x, type = c("fixed","SD","subject"), lag = 1,subject,order,...){
-#   if (type[[1]]=="subject" & missing(subject)){
+#   if (type[[1]]=="subject" && missing(subject)){
 #     stop("'subject' is needed to plot individual network")
 #   }
 #   

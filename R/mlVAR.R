@@ -87,8 +87,8 @@ mlVAR <- function(
   # ...
 )
 {
-  if (0 %in% lags & length(lags) > 1){
-    stop("0 in 'lags' ignored; contemporaneous relationships are estimated by default.")
+  if (0 %in% lags && length(lags) > 1){
+    warning("0 in 'lags' ignored; contemporaneous relationships are estimated by default.")
     lags <- lags[lags!=0]
   }
   # First check the estimation options:
@@ -359,7 +359,7 @@ mlVAR <- function(
   
   
   # Between-subjects model:
-  if (betweenSubjects == "GGM" & estimator == "lmer"){
+  if (betweenSubjects == "GGM" && estimator == "lmer"){
     between <- expand.grid(dep=vars,pred=vars,lag=NA,type="between",
                            stringsAsFactors = FALSE)
     

@@ -1,6 +1,3 @@
-library("dplyr")
-library("parallel")
-
 # Opzet:
 parSim <- function(
   ..., # Simulation conditions
@@ -22,7 +19,10 @@ parSim <- function(
   
   # Exclude cases:
   if (!missing(exclude)){
-    suppressWarnings(AllConditions <- AllConditions %>% filter_(.dots = exclude))
+    exprs <- lapply(exclude, function(ex) {
+      if (inherits(ex, "formula")) rlang::f_rhs(ex) else rlang::parse_expr(ex)
+    })
+    AllConditions <- AllConditions %>% filter(!!!exprs)
   }
   
   

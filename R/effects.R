@@ -8,10 +8,6 @@ asterix <- function(x){
 
 ## fixedEffects:
 fixedEffects <- function(object,digits=5){
-  # global dummies:
-  . <- NULL
-  effect <- NULL
-  
   if (is(object,"mlVAR_MW")){
     return(object$fixedEffects)
   }
@@ -53,12 +49,12 @@ fixedEffects <- function(object,digits=5){
   
   if (any(duplicated(df[c("Response","Predictor")]))){
     message("Duplicate effects found (possibly due to moving window approach), averaging effect, se and p-value.")
-    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("effect","se","p")))
+    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise(across(c("effect","se","p"), ~mean(.x, na.rm=TRUE))))
   }
 
   # Remove NA rows:
-  df <- df %>% filter(!is.na(effect))
-  
+  df <- df %>% filter(!is.na(.data[["effect"]]))
+
   return(df)
 }
 
@@ -67,11 +63,6 @@ fixedEffects <- function(object,digits=5){
 randomEffects<- function(object, digits=5){
   if (is(object,"mlVAR_MW")) stop("Cannot estimate random effects with moving window approach")
 
-  # global dummies:
-  . <- NULL
-  variance <- NULL
-  
-  
   if (!is(object,"mlVAR0")){
     stop("Only works for mlVAR0 objects.")
   }
@@ -91,12 +82,11 @@ randomEffects<- function(object, digits=5){
   
   if (any(duplicated(df[c("Response","Predictor")]))){
     message("Duplicate effects found (possibly due to moving window approach), averaging variance.")
-    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise_each_(funs(mean(., na.rm=TRUE)), vars = c("variance")))
+    suppressWarnings(df <- df %>% group_by(.data[["Response"]],.data[["Predictor"]]) %>% summarise(across(c("variance"), ~mean(.x, na.rm=TRUE))))
   }
   
   # Remove NA rows:
-  df <- df %>% filter(!is.na(variance))
-  
-  return(df)
+  df <- df %>% filter(!is.na(.data[["variance"]]))
+
   return(df)
 }

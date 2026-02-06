@@ -1,5 +1,13 @@
 Changes in Version 0.5.5
   - Fixed R CMD check NOTE: no visible binding for global variable 'id' in movingWindow
+  - Replaced deprecated dplyr functions: summarize_each/funs() with across(), summarise_each_() with across(), filter_() with filter()
+  - Removed library() calls from parSim.R
+  - Removed stringsAsFactors argument from cbind() calls in NodeWise.R (had no effect)
+  - Replaced plyr::ddply and plyr::join with dplyr equivalents; removed plyr dependency
+  - Fixed unreachable code after stop() in mlVAR (changed to warning)
+  - Fixed duplicate return statement in randomEffects
+  - Cleaned up NAMESPACE: removed duplicate export and unused plyr imports
+  - Minimum dplyr version bumped to >= 1.0.0
 
 Changes in Version 0.5.4
   - mlVAR with lmer estimation now returns 'step1_residuals' in the output

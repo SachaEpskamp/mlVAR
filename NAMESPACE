@@ -2,8 +2,6 @@
 export(mlVARsample)
 
 importFrom(rlang,.data)
-
-export(mlVARsample)
 S3method(summary, mlVARsample)
 
 importFrom(clusterGeneration,"genPositiveDefMat")
@@ -21,7 +19,6 @@ S3method(print, mlVARcompare)
 S3method(plot, mlVARsim)
 #importFrom(plyr, "ddply")
 import(lme4)
-importFrom(plyr, "join")
 #importFrom(lme4, "lmer")
 #importFrom(lme4, "fixef")
 #importFrom(lme4, "ranef")
@@ -37,8 +34,6 @@ export(getNet)
 import(abind)
 importFrom(corpcor,"cor2pcor")
 importFrom(corpcor,"pseudoinverse")
-importFrom(plyr,"aaply")
-importFrom(plyr,"alply")
 export(mlVARcompare)
 import(MplusAutomation)
 

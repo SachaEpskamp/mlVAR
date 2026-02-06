@@ -44,7 +44,7 @@ mlVAR0 <- function(
   laginteractions <- match.arg(laginteractions)
   
   if (missing(orthogonal)){
-    if (length(vars) > 6 & method != "movingWindow"){
+    if (length(vars) > 6 && method != "movingWindow"){
       
       if (verbose) message("More than 6 nodes and method != 'movingWindow', correlations between random effects are set to zero (orthogonal = TRUE)")
       orthogonal <- TRUE
@@ -99,38 +99,42 @@ mlVAR0 <- function(
 
   
   # Create augmented lagged data:
-  augData <- plyr::ddply(data, c(idvar,dayvar,periodvar), function(x){
-    # Check for duplicate beeps:
-    if (any(duplicated(x[[beepvar]])))
-    {
-      stop("Duplicated beepnumbers found. ")
-    }
-    # Order by beep:
-    x <- x[order(x[[beepvar]]),]
-    
-    
-    # Augment missing:
-    beepseq <- seq(1, max(x[[beepvar]]))
-    if (!identical(x[[beepvar]], beepseq))
-    {
-      dummy <- data.frame(ID = unique(x[[idvar]]), PERIOD= unique(x[[periodvar]]), DAY = unique(x[[dayvar]]), BEEP = beepseq)
-      names(dummy) <- c(idvar,periodvar,dayvar,beepvar)
-      x <- plyr::join(dummy,x, by = names(dummy)) 
-    }
-    
-    # Lag variables:
-    for (l in lags)
-    {
-      if (l > nrow(x)) stop("Lag is larger than number of measurements")
-      
-      lagDF <- x[-(nrow(x)-(1:l)+1),vars]
-      lagDF <- lagDF[c(rep(NA,l),seq_len(nrow(lagDF))),]
-      names(lagDF) <- paste0("L",l,"_",names(lagDF))
-      x <- cbind(x,lagDF)
-    }
-    
-    return(x)
-  })
+  augData <- data %>%
+    group_by(.data[[idvar]], .data[[dayvar]], .data[[periodvar]]) %>%
+    group_split() %>%
+    lapply(function(x){
+      # Check for duplicate beeps:
+      if (any(duplicated(x[[beepvar]])))
+      {
+        stop("Duplicated beepnumbers found. ")
+      }
+      # Order by beep:
+      x <- x[order(x[[beepvar]]),]
+
+
+      # Augment missing:
+      beepseq <- seq(1, max(x[[beepvar]]))
+      if (!identical(x[[beepvar]], beepseq))
+      {
+        dummy <- data.frame(ID = unique(x[[idvar]]), PERIOD= unique(x[[periodvar]]), DAY = unique(x[[dayvar]]), BEEP = beepseq)
+        names(dummy) <- c(idvar,periodvar,dayvar,beepvar)
+        x <- left_join(dummy, x, by = names(dummy))
+      }
+
+      # Lag variables:
+      for (l in lags)
+      {
+        if (l > nrow(x)) stop("Lag is larger than number of measurements")
+
+        lagDF <- x[-(nrow(x)-(1:l)+1),vars]
+        lagDF <- lagDF[c(rep(NA,l),seq_len(nrow(lagDF))),]
+        names(lagDF) <- paste0("L",l,"_",names(lagDF))
+        x <- cbind(x,lagDF)
+      }
+
+      return(x)
+    }) %>%
+    bind_rows()
   
   
   ### MULTILEVEL ANALYSIS ###
