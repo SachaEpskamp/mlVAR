@@ -80,7 +80,7 @@ movingWindow <- function(
         x <- x[[1]]
         x$id <- seq_len(nrow(x))
         x
-      }) %>% bind_rows() %>% group_by(id) %>% summarize_each(funs(mean(., na.rm=TRUE))),
+      }) %>% bind_rows() %>% group_by(.data[["id"]]) %>% summarize_each(funs(mean(., na.rm=TRUE))),
       ranPerID = lapply(seq_along(Results[[1]]$ranPerID), function(i){
         Results %>% lapply(function(x)x$ranPerID[[i]]) %>% 
           bind_rows() %>% group_by(.data[["dep"]]) %>% summarize_each(funs(mean(., na.rm=TRUE)))
