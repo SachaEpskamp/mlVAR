@@ -16,7 +16,8 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
                  "unique"), nCores = 1, verbose = TRUE, compareToLags,
                  scale = TRUE, scaleWithin = FALSE, AR = FALSE, 
                  MplusSave = TRUE, MplusName = "mlVAR", iterations = "(2000)", 
-                 chains = nCores, signs, orthogonal
+                 chains = nCores, signs, orthogonal,
+                 trueMeans, na.rm = TRUE
   )
 }
 %- maybe also 'usage' for other objects documented here.
@@ -66,6 +67,12 @@ A vector indicating which lags to base the data on. If the model is to be compar
 \item{signs}{Optional matrix fixing the signs of contemporaneous correlations. Is estimated by running mlVAR with \code{estimator = "lmer"} if missing.}
   \item{orthogonal}{
 Deprecated argument only added for backward competability. Ignore.
+}
+  \item{trueMeans}{
+Optional data frame with true person-wise means to use instead of estimated person means. Must contain the \code{idvar} column and all \code{vars} columns.
+}
+  \item{na.rm}{
+Logical, should missing values be removed when checking for rank deficiency and when removing incomplete cases? Defaults to \code{TRUE}.
 }
 }
 \details{
