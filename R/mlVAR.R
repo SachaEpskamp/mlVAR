@@ -401,9 +401,10 @@ mlVAR <- function(
     )))
   }
   
-   beepsPerDay <-  dplyr::summarize(data %>% group_by(.data[[idvar]],.data[[dayvar]]), 
+   beepsPerDay <-  dplyr::summarize(data %>% group_by(.data[[idvar]],.data[[dayvar]]),
                                                     first = min(.data[[beepvar]],na.rm=TRUE),
-                                                    last = max(.data[[beepvar]],na.rm=TRUE))
+                                                    last = max(.data[[beepvar]],na.rm=TRUE),
+                                                    .groups = "drop")
 
   
   # all beeps:
@@ -542,12 +543,16 @@ mlVAR <- function(
   
   # Add input:
   Res[['input']] <- list(
-    vars = vars, 
+    vars = vars,
     lags = lags,
     compareToLags=compareToLags,
     estimator = estimator,
     temporal = temporal,
-    AR = AR
+    AR = AR,
+    originalData = data[, c(idvar, dayvar, beepvar), drop = FALSE],
+    idvar = idvar,
+    dayvar = dayvar,
+    beepvar = beepvar
   )
   
   if (estimator == "lmer"){

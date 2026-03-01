@@ -1,3 +1,13 @@
+Changes in Version 0.6
+  - Added residuals() S3 method for mlVAR objects, returning step 1 residuals aligned to the original input data structure (with NAs for rows without residuals)
+  - Added .groups = "drop" to all grouped summarise/summarize calls to suppress dplyr 1.0.0+ lifecycle warnings
+  - Fixed bug in Stepwise(): selected wrong model at each iteration step
+  - Fixed bug in importMplus: temporal fixed effects were only extracted for the first outcome variable
+  - Fixed bug in Mplus correlation samples: all samples were computed from the 3rd sample instead of each respective sample
+  - Fixed bug in mlVARsample: subjects with improper or non-stationary models were not correctly excluded from simulation
+  - Added iteration cap (1000) to mlVARsim repeat loop to prevent infinite loops when stable parameters cannot be generated
+  - Minor: avoided redundant eigendecomposition in forcePositive()
+
 Changes in Version 0.5.5
   - Fixed R CMD check NOTE: no visible binding for global variable 'id' in movingWindow
   - Replaced deprecated dplyr functions: summarize_each/funs() with across(), summarise_each_() with across(), filter_() with filter()

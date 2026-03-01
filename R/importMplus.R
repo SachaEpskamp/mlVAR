@@ -117,7 +117,7 @@ importMplus <- function(outfile){
       for (j in 1:nPred){
         for (l in 1:nLag){
           # Name of column:
-          colName <- paste0("%WITHIN%:.",toupper(Outcomes[1]),".ON.",toupper(Predictors[j]),"&",Lags[l])
+          colName <- paste0("%WITHIN%:.",toupper(Outcomes[i]),".ON.",toupper(Predictors[j]),"&",Lags[l])
 
             # Fixed effect:
             sampleParID <- which(sampleNames == colName)

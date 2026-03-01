@@ -65,7 +65,7 @@ print.mlVARcompare <- function(x,...){
   overalTab <- do.call(rbind,x) %>% group_by(.data[["var"]]) %>%
     mutate(bestAIC = .data[['aic']] == min(.data[['aic']]), bestBIC = .data[['bic']] == min(.data[['bic']])) %>%
     ungroup %>% 
-    group_by(.data[["lags"]],.data[["temporal"]],.data[["temporalModel"]]) %>% summarize(nAIC = sum(.data[['bestAIC']]), nBIC = sum(.data[['bestBIC']])) %>%
+    group_by(.data[["lags"]],.data[["temporal"]],.data[["temporalModel"]]) %>% summarize(nAIC = sum(.data[['bestAIC']]), nBIC = sum(.data[['bestBIC']]), .groups = "drop") %>%
     as.data.frame
   print(overalTab,row.names = FALSE)
   

@@ -10,7 +10,7 @@ leastSquares_mlVAR <-
     nVar <- length(Outcomes)
 
     withinMod <- model %>% filter(type == "within") %>%
-      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID)) %>%
+      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID), .groups = "drop") %>%
       mutate(ord = match(pred,Outcomes)) %>% arrange(ord,lag)
     
     predID <- withinMod$id
@@ -84,8 +84,8 @@ leastSquares_mlVAR <-
     
     # Beta:
     withinMod <- model %>% filter(type == "within") %>%
-      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID)) %>%
-      mutate(ord = match(pred,Outcomes)) %>% ungroup %>% arrange(ord,lag)
+      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID), .groups = "drop") %>%
+      mutate(ord = match(pred,Outcomes)) %>% arrange(ord,lag)
     Outcomes <- unique(model$dep)
     
     Beta_subject <- lapply(leastSquares, '[[', 'Beta')

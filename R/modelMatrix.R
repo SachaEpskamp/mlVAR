@@ -53,7 +53,7 @@ covSamples_Mplus <- function(fixed, SD = NULL, subject = NULL){
   # cor samples:
   corSamples <- fixed
   for (i in 1:dimV(corSamples)[3]){
-    corSamples[,,i] <- cov2cor(corSamples[,,3])
+    corSamples[,,i] <- cov2cor(corSamples[,,i])
   }
   
   # Correlation:

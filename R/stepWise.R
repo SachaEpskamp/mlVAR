@@ -51,7 +51,7 @@ Stepwise <- function(
       break
     } else {
       best <- which.min(propCrits)
-      curModel <- propModels[[i]]
+      curModel <- propModels[[best]]
       CurResult <- propResults[[best]]
       curCrit <- propCrits[[best]]
     }

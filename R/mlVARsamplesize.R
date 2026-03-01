@@ -106,7 +106,7 @@ mlVARsample <- function(
   if (any(!goodVar | !stationary)){
     warning(paste0("Model for subject(s) ",paste(which(!goodVar | !stationary),collapse=" "),
                    " are not proper removed from simulation"))
-    keep <- goodVar | stationary
+    keep <- goodVar & stationary
     invTheta <- invTheta[keep]
     Beta <- Beta[keep]
     Means <- Means[keep]
@@ -379,7 +379,7 @@ summary.mlVARsample <- function(object, ...){
   }
   
   res <- object %>% group_by(.data[["network"]],.data[["nTime"]],.data[["nSample"]],.data[["pMissing"]]) %>%
-    summarise(across(c("sensitivity","specificity","precision","correlation","bias"), ~ sumfun(.x))) %>%
+    summarise(across(c("sensitivity","specificity","precision","correlation","bias"), ~ sumfun(.x)), .groups = "drop") %>%
     as.data.frame
   
   return(res)

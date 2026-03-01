@@ -55,7 +55,7 @@ movingWindow <- function(
     FullResults <- list(
       Result = lapply(Results,"[[","Result"),
       Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE)))
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop")
     )
 
   } else {
@@ -64,26 +64,26 @@ movingWindow <- function(
       Result = lapply(Results,"[[","Result"),
       formula = lapply(Results,"[[","formula"),
       FixEf = Results %>% lapply("[[","FixEf") %>% bind_rows() %>% 
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       FixEf_SE = Results %>% lapply("[[","FixEf_SE") %>% bind_rows() %>% 
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       Coef = Results %>% lapply("[[","Coef") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       se.Coef = Results %>% lapply("[[","se.Coef") %>% bind_rows() %>%group_by(.data[["dep"]])  %>%
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       pvals = Results %>% lapply("[[","pvals") %>% bind_rows() %>% group_by(.data[["dep"]])  %>%
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       ranEffects = Results %>% lapply("[[", "ranEffects") %>% lapply(function(x){
         x <- x[[1]]
         x$id <- seq_len(nrow(x))
         x
-      }) %>% bind_rows() %>% group_by(.data[["id"]]) %>% summarise(across(everything(), ~mean(.x, na.rm=TRUE))),
+      }) %>% bind_rows() %>% group_by(.data[["id"]]) %>% summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop"),
       ranPerID = lapply(seq_along(Results[[1]]$ranPerID), function(i){
         Results %>% lapply(function(x)x$ranPerID[[i]]) %>% 
-          bind_rows() %>% group_by(.data[["dep"]]) %>% summarise(across(everything(), ~mean(.x, na.rm=TRUE)))
+          bind_rows() %>% group_by(.data[["dep"]]) %>% summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop")
       }),
       Variance = Results %>% lapply("[[","Variance") %>% bind_rows() %>% group_by(.data[["dep"]]) %>% 
-        summarise(across(everything(), ~mean(.x, na.rm=TRUE)))
+        summarise(across(everything(), ~mean(.x, na.rm=TRUE)), .groups = "drop")
     )
   }
 

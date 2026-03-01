@@ -143,6 +143,34 @@ summary.mlVAR <- function(
 }
 
 
+residuals.mlVAR <- function(object, ...) {
+  if (is.null(object$step1_residuals)) {
+    stop("No step 1 residuals found. Only available for estimator = 'lmer'.")
+  }
+
+  idvar <- object$input$idvar
+  dayvar <- object$input$dayvar
+  beepvar <- object$input$beepvar
+
+  augData <- object$data
+  origData <- object$input$originalData
+
+  aug_key <- paste(augData[[idvar]], augData[[dayvar]], augData[[beepvar]], sep = "_")
+  orig_key <- paste(origData[[idvar]], origData[[dayvar]], origData[[beepvar]], sep = "_")
+
+  idx <- match(orig_key, aug_key)
+
+  vars <- colnames(object$step1_residuals)
+  result <- as.data.frame(matrix(NA, nrow = nrow(origData), ncol = length(vars)))
+  colnames(result) <- vars
+
+  matched <- !is.na(idx)
+  result[matched, ] <- object$step1_residuals[idx[matched], , drop = FALSE]
+
+  return(result)
+}
+
+
 makeSym <- function(x) (x + t(x))/2
 
 

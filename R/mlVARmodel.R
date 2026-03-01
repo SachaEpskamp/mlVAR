@@ -145,7 +145,13 @@ mlVARsim <- function(
   
   # 3. Generate random parameter sets:
   if (lag > 0){
+    maxIter <- 1000
+    iter <- 0
     repeat{
+      iter <- iter + 1
+      if (iter > maxIter){
+        stop("Could not generate stable VAR parameters after ", maxIter, " iterations. Consider using smaller random effect variances.")
+      }
       Pars <- rmvnorm(nPerson, c(mu_fixed,beta_fixed), sigma = Omega)
       Mus <- Pars[,1:nNode]
       

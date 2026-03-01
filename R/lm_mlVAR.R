@@ -12,7 +12,7 @@ lm_mlVAR <-
     nVar <- length(Outcomes)
 
     withinMod <- model %>% filter(type == "within") %>%
-      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID)) %>%
+      group_by(pred, lag) %>% dplyr::summarise(id = unique(predID), .groups = "drop") %>%
       mutate(ord = match(pred,Outcomes)) %>% arrange(ord,lag)
     
     predID <- withinMod$id

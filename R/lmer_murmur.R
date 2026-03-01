@@ -13,12 +13,12 @@ BetatoArray <- function(x, mod, out){
 
 forcePositive <- function(x){
   x <- (x + t(x))/2
-  if (any(eigen(x)$values < 0)){
-    return(x - (diag(nrow(x)) * min(eigen(x)$values)-0.001))    
+  ev <- eigen(x)$values
+  if (any(ev < 0)){
+    return(x - (diag(nrow(x)) * min(ev) - 0.001))
   } else {
     return(x)
   }
-  
 }
 
 lmer_mlVAR <- 
@@ -189,7 +189,7 @@ lmer_mlVAR <-
     #       
     ### Second as GGM:
     # Which predictor codes are the variables:
-    modSum <- model %>% filter(.data[['type']] == "between") %>% group_by(.data[["pred"]]) %>% dplyr::summarize(id = unique(.data[['predID']]))
+    modSum <- model %>% filter(.data[['type']] == "between") %>% group_by(.data[["pred"]]) %>% dplyr::summarize(id = unique(.data[['predID']]), .groups = "drop")
     IDs <- modSum$id[match(Outcomes, modSum$pred)]
     
     # Construct gamma and D:
@@ -248,7 +248,7 @@ lmer_mlVAR <-
       ### Compute Betas ###
       # Obtain the names of predictors in order Outcomes / lag:
       withinMod <- model %>% filter(.data[['type']] == "within") %>%
-        group_by(.data[["pred"]],.data[["lag"]]) %>% dplyr::summarise(id = unique(.data[['predID']])) %>%
+        group_by(.data[["pred"]],.data[["lag"]]) %>% dplyr::summarise(id = unique(.data[['predID']]), .groups = "drop") %>%
         mutate(ord = match(.data[['pred']],Outcomes)) %>% ungroup %>% arrange(.data[["ord"]],.data[["lag"]])
       
       predID <- withinMod$id
