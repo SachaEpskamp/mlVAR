@@ -160,12 +160,12 @@ residuals.mlVAR <- function(object, ...) {
 
   idx <- match(orig_key, aug_key)
 
-  vars <- colnames(object$step1_residuals)
+  vars <- object$input$vars
   result <- as.data.frame(matrix(NA, nrow = nrow(origData), ncol = length(vars)))
   colnames(result) <- vars
 
   matched <- !is.na(idx)
-  result[matched, ] <- object$step1_residuals[idx[matched], , drop = FALSE]
+  result[matched, ] <- object$step1_residuals[idx[matched], vars, drop = FALSE]
 
   return(result)
 }
