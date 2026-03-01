@@ -171,6 +171,233 @@ residuals.mlVAR <- function(object, ...) {
 }
 
 
+### mlGGM S3 methods ###
+
+print.mlGGM <- function(x, ...) {
+  name <- deparse(substitute(x))[[1]]
+  if (nchar(name) > 10) name <- "object"
+  if (name == "x") name <- "object"
+
+  cat("\nmlGGM estimation completed. Input was:\n",
+      "\t- Variables:", x$input$vars, "\n",
+      "\t- Estimator:", x$input$estimator, "\n",
+      "\t- Random effects:", x$input$randomeffects, "\n")
+
+  cat("\n",
+      paste0("Use summary(", name, ") to inspect fit and parameter estimates"),
+      "\n",
+      paste0("Use plot(", name, ") to plot estimated networks"),
+      "\n",
+      paste0("Use getNet(", name, ", 'within') or getNet(", name, ", 'between') to extract network matrices"),
+      "\n")
+}
+
+
+summary.mlGGM <- function(
+  object,
+  show = c("fit", "within", "between"),
+  round = 3,
+  ...
+) {
+  x <- object
+
+  cat("\nmlGGM estimation completed. Input was:\n",
+      "\t- Variables:", x$input$vars, "\n",
+      "\t- Estimator:", x$input$estimator, "\n",
+      "\t- Random effects:", x$input$randomeffects, "\n")
+
+  nVar <- length(object$input$vars)
+  vars <- object$input$vars
+
+  if ("fit" %in% show) {
+    cat("\nInformation indices:\n")
+    print(object$fit, row.names = FALSE)
+  }
+
+  if ("within" %in% show) {
+    pcor <- object$results$within$pcor$mean
+    cor_mat <- object$results$within$cor$mean
+    P <- object$results$Gamma_within$P
+    UT <- upper.tri(pcor)
+
+    if (is.null(P)) {
+      P <- matrix(NA, nrow(UT), ncol(UT))
+    }
+
+    cat("\n\nWithin-cluster effects:\n")
+    WithinDF <- data.frame(
+      v1 = vars[col(pcor)][UT],
+      v2 = vars[row(pcor)][UT],
+      "P 1->2" = round(P[UT], round),
+      "P 2->1" = round(t(P)[UT], round),
+      pcor = round(pcor[UT], round),
+      cor = round(cor_mat[UT], round)
+    )
+    names(WithinDF) <- c("v1", "v2", "P 1->2", "P 1<-2", "pcor", "cor")
+    print(WithinDF, row.names = FALSE)
+  } else {
+    WithinDF <- NULL
+  }
+
+  if ("between" %in% show) {
+    pcor <- object$results$between$pcor$mean
+    cor_mat <- object$results$between$cor$mean
+    P <- object$results$Gamma_between$P
+    UT <- upper.tri(pcor)
+
+    if (is.null(P)) {
+      P <- matrix(NA, nrow(pcor), ncol(pcor))
+    }
+
+    cat("\n\nBetween-cluster effects:\n")
+    BetDF <- data.frame(
+      v1 = vars[col(pcor)][UT],
+      v2 = vars[row(pcor)][UT],
+      "P 1->2" = round(P[UT], round),
+      "P 2->1" = round(t(P)[UT], round),
+      pcor = round(pcor[UT], round),
+      cor = round(cor_mat[UT], round)
+    )
+    names(BetDF) <- c("v1", "v2", "P 1->2", "P 1<-2", "pcor", "cor")
+    print(BetDF, row.names = FALSE)
+  } else {
+    BetDF <- NULL
+  }
+
+  invisible(list(within = WithinDF, between = BetDF))
+}
+
+
+plot.mlGGM <- function(
+  x,
+  type = c("within", "between"),
+  partial = TRUE,
+  SD = FALSE,
+  subject,
+  order,
+  nonsig = c("default", "show", "hide", "dashed"),
+  rule = c("or", "and"),
+  alpha = 0.05,
+  layout = "spring",
+  verbose = TRUE,
+  ...
+) {
+  rule <- match.arg(rule)
+  type <- match.arg(type)
+  nonsig <- match.arg(nonsig)
+
+  if (nonsig == "default") {
+    if (!partial || !missing(subject)) {
+      nonsig <- "show"
+    } else {
+      nonsig <- "hide"
+    }
+    if (verbose) {
+      message(paste0("'nonsig' argument set to: '", nonsig, "'"))
+    }
+  }
+
+  if (missing(order)) {
+    order <- x$input$vars
+  }
+
+  if (is.character(order)) {
+    ord <- match(order, x$input$vars)
+  } else {
+    ord <- order
+  }
+
+  sub <- ifelse(partial, "pcor", "cor")
+
+  if (type == "within") {
+    if (SD) {
+      NET <- x$results$within[[sub]]$SD
+      SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+    } else if (!missing(subject)) {
+      NET <- x$results$within[[sub]]$subject[[subject]]
+      SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+      if (nonsig != "show") {
+        warning("Can not hide non-significant edges for subject network.")
+      }
+    } else {
+      NET <- x$results$within[[sub]]$mean
+
+      if (nonsig != "show") {
+        if (partial && !is.null(x$results$Gamma_within) && !all(is.nan(x$results$Gamma_within$P))) {
+          diag(x$results$Gamma_within$P) <- 0
+          if (rule == "or") {
+            SIG <- x$results$Gamma_within$P < alpha | t(x$results$Gamma_within$P) < alpha
+          } else {
+            SIG <- x$results$Gamma_within$P < alpha & t(x$results$Gamma_within$P) < alpha
+          }
+        } else if (!any(is.na(x$results$within[[sub]]$P))) {
+          SIG <- x$results$within[[sub]]$P < alpha
+        } else {
+          SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+          if (nonsig != "show") {
+            stop("No p-values or CI computed. Can not hide non-significant edges.")
+          }
+        }
+      } else {
+        SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+      }
+    }
+    NET <- makeSym(NET)
+  }
+
+  if (type == "between") {
+    if (!missing(subject)) {
+      stop("No subject-specific between network possible")
+    }
+    if (SD) {
+      stop("No SD for between-cluster network.")
+    }
+
+    NET <- x$results$between[[sub]]$mean
+
+    if (nonsig != "show") {
+      if (partial && !is.null(x$results$Gamma_between) && !all(is.nan(x$results$Gamma_between$P))) {
+        diag(x$results$Gamma_between$P) <- 0
+        if (rule == "or") {
+          SIG <- x$results$Gamma_between$P < alpha | t(x$results$Gamma_between$P) < alpha
+        } else {
+          SIG <- x$results$Gamma_between$P < alpha & t(x$results$Gamma_between$P) < alpha
+        }
+      } else if (!any(is.na(x$results$between[[sub]]$P))) {
+        SIG <- x$results$between[[sub]]$P < alpha
+      } else {
+        SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+        if (nonsig != "show") {
+          stop("No p-values or CI computed. Can not hide non-significant edges.")
+        }
+      }
+    } else {
+      SIG <- matrix(TRUE, nrow(NET), ncol(NET))
+    }
+
+    NET <- makeSym(NET)
+  }
+
+  ### PLOT NETWORK ###
+  if (nonsig == "dashed") {
+    lty <- ifelse(!SIG, 2, 1)
+  } else {
+    lty <- 1
+  }
+
+  if (nonsig == "hide") {
+    NET <- NET * SIG
+  }
+
+  if (any(is.na(NET[ord, ord][upper.tri(NET[ord, ord])])) || any(is.na(NET[ord, ord][lower.tri(NET[ord, ord])]))) {
+    stop("Network not estimated correctly.")
+  }
+
+  qgraph::qgraph(NET[ord, ord], lty = lty, labels = x$input$vars[ord],
+                  layout = layout, ..., directed = FALSE)
+}
+
+
 makeSym <- function(x) (x + t(x))/2
 
 
