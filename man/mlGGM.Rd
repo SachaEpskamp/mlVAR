@@ -17,7 +17,8 @@ NOTE: This function is currently experimental and may change in future versions.
 mlGGM(data, vars, idvar = "id",
       estimator = c("lmer"),
       randomeffects = c("default", "correlated", "orthogonal", "fixed"),
-      scale = TRUE, na.rm = TRUE, verbose = TRUE)
+      scale = TRUE, na.rm = TRUE, verbose = TRUE,
+      full_detrend = FALSE)
 
 \method{print}{mlGGM}(x, \dots)
 \method{summary}{mlGGM}(object, show = c("fit", "within", "between"),
@@ -52,6 +53,9 @@ Logical. Should rows with missing values be removed? Defaults to \code{TRUE}.
 }
   \item{verbose}{
 Logical indicating if console messages and progress bars should be shown.
+}
+  \item{full_detrend}{
+Logical. If \code{TRUE}, standardize each variable per observation position across all clusters before estimation. For example, all first observations within each cluster are standardized together, all second observations together, etc. Requires a balanced design (equal number of observations per cluster). Applied before grand-mean standardization (\code{scale}). Defaults to \code{FALSE}.
 }
   \item{x}{
 An \code{mlGGM} object.

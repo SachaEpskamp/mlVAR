@@ -10,7 +10,8 @@ mlGGM <- function(
   randomeffects = c("default", "correlated", "orthogonal", "fixed"),
   scale = TRUE,
   na.rm = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  full_detrend = FALSE
 ) {
 
   # Experimental warning:
@@ -66,6 +67,18 @@ mlGGM <- function(
     warning(paste0("The following variables are linearly dependent on other columns, and therefore dropped from the mlGGM analysis:\n",
                    paste("\t-", discard, collapse = "\n")))
     vars <- vars[keep]
+  }
+
+  # Standardize per observation position across clusters:
+  if (full_detrend) {
+    obs_idx <- ave(seq_len(nrow(data)), data[[idvar]], FUN = seq_along)
+    obs_per_cluster <- table(data[[idvar]])
+    if (length(unique(obs_per_cluster)) != 1) {
+      stop("'full_detrend' requires equal number of observations per cluster.")
+    }
+    for (v in vars) {
+      data[[v]] <- ave(data[[v]], obs_idx, FUN = Scale)
+    }
   }
 
   # Grand-mean standardize if scale = TRUE:

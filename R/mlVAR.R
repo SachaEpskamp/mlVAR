@@ -76,8 +76,10 @@ mlVAR <- function(
   orthogonal, # Used for backward competability
   
   trueMeans, # Optional data frame with true personwise means to plug in
-  
-  na.rm = TRUE
+
+  na.rm = TRUE,
+
+  full_detrend = FALSE # Standardize per observation position across clusters
   
   # nCores = 1,
   # JAGSexport = FALSE, # Exports jags files
@@ -338,6 +340,18 @@ mlVAR <- function(
   }
 
     
+  # Standardize per observation position across clusters:
+  if (full_detrend) {
+    obs_idx <- ave(seq_len(nrow(data)), data[[idvar]], FUN = seq_along)
+    obs_per_cluster <- table(data[[idvar]])
+    if (length(unique(obs_per_cluster)) != 1) {
+      stop("'full_detrend' requires equal number of observations per cluster.")
+    }
+    for (v in vars) {
+      data[[v]] <- ave(data[[v]], obs_idx, FUN = Scale)
+    }
+  }
+
   # Standardize across all variables:
   if (scale){
     for (v in vars){

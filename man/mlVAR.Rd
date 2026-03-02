@@ -17,7 +17,8 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
                  scale = TRUE, scaleWithin = FALSE, AR = FALSE, 
                  MplusSave = TRUE, MplusName = "mlVAR", iterations = "(2000)", 
                  chains = nCores, signs, orthogonal,
-                 trueMeans, na.rm = TRUE
+                 trueMeans, na.rm = TRUE,
+                 full_detrend = FALSE
   )
 }
 %- maybe also 'usage' for other objects documented here.
@@ -73,6 +74,9 @@ Optional data frame with true person-wise means to use instead of estimated pers
 }
   \item{na.rm}{
 Logical, should missing values be removed when checking for rank deficiency and when removing incomplete cases? Defaults to \code{TRUE}.
+}
+  \item{full_detrend}{
+Logical. If \code{TRUE}, standardize each variable per observation position across all subjects before estimation. For example, all first measurements are standardized together, all second measurements together, etc. This removes systematic occasion effects (e.g., time-of-day trends in ESM data). Requires a balanced design (equal number of observations per subject). Applied before grand-mean standardization (\code{scale}). Defaults to \code{FALSE}.
 }
 }
 \details{
