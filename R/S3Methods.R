@@ -219,7 +219,7 @@ summary.mlVAR <- function(
 
 
 ## Internal helper: predict on newdata
-.predict_mlVAR_newdata <- function(object, newdata, scale_back = TRUE, include_ids = TRUE) {
+.predict_mlVAR_newdata <- function(object, newdata, scale_back = TRUE) {
 
   vars <- object$input$vars
   idvar <- object$input$idvar
@@ -346,34 +346,16 @@ summary.mlVAR <- function(
     }
   }
 
-  # Observed data on same scale as predictions:
-  if (scale_back) {
-    observed_df <- origNewdata[, vars, drop = FALSE]
-  } else {
-    observed_df <- origNewdata[, vars, drop = FALSE]
-    if (isTRUE(object$input$scaled)) {
-      for (v in vars) {
-        observed_df[[v]] <- (observed_df[[v]] - object$input$scale_means[v]) / object$input$scale_sds[v]
-      }
-    }
-  }
-
-  result <- list(
+  list(
     predicted = predicted_df,
     residuals = residuals_df,
-    data = observed_df
+    ids = origNewdata[, c(idvar, dayvar, beepvar), drop = FALSE]
   )
-
-  if (include_ids) {
-    result$ids <- origNewdata[, c(idvar, dayvar, beepvar), drop = FALSE]
-  }
-
-  class(result) <- "mlVARpredictions"
-  return(result)
 }
 
 
-predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE, ...) {
+## Internal workhorse: computes both predictions and residuals on training data
+.predict_mlVAR_train <- function(object, scale_back = TRUE) {
 
   vars <- object$input$vars
   idvar <- object$input$idvar
@@ -381,12 +363,6 @@ predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE
   beepvar <- object$input$beepvar
   estimator <- object$input$estimator
 
-  # Dispatch to newdata handler:
-  if (!missing(newdata)) {
-    return(.predict_mlVAR_newdata(object, newdata, scale_back = scale_back, include_ids = include_ids))
-  }
-
-  # --- Predict on training data ---
   origData <- object$input$originalData
   augData <- object$data
 
@@ -443,7 +419,7 @@ predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE
     }
 
   } else {
-    stop(paste0("predict.mlVAR not implemented for estimator = '", estimator, "'"))
+    stop(paste0("predict/residuals not implemented for estimator = '", estimator, "'"))
   }
 
   # Scale back to original metric if requested:
@@ -454,41 +430,55 @@ predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE
     }
   }
 
-  # Observed data on same scale as predictions:
-  if (scale_back) {
-    observed_df <- origData[, vars, drop = FALSE]
-  } else {
-    observed_df <- origData[, vars, drop = FALSE]
-    if (isTRUE(object$input$scaled)) {
-      for (v in vars) {
-        observed_df[[v]] <- (observed_df[[v]] - object$input$scale_means[v]) / object$input$scale_sds[v]
-      }
+  list(predicted = predicted_df, residuals = residuals_df)
+}
+
+
+predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE, ...) {
+
+  vars <- object$input$vars
+  idvar <- object$input$idvar
+  dayvar <- object$input$dayvar
+  beepvar <- object$input$beepvar
+
+  # Dispatch to newdata handler:
+  if (!missing(newdata)) {
+    res <- .predict_mlVAR_newdata(object, newdata, scale_back = scale_back)
+    result <- res$predicted
+    if (include_ids) {
+      result <- cbind(res$ids, result)
     }
+    return(result)
   }
 
-  result <- list(
-    predicted = predicted_df,
-    residuals = residuals_df,
-    data = observed_df
-  )
+  # Training data:
+  res <- .predict_mlVAR_train(object, scale_back = scale_back)
+  result <- res$predicted
 
   if (include_ids) {
-    result$ids <- origData[, c(idvar, dayvar, beepvar), drop = FALSE]
+    ids <- object$input$originalData[, c(idvar, dayvar, beepvar), drop = FALSE]
+    result <- cbind(ids, result)
   }
 
-  class(result) <- "mlVARpredictions"
   return(result)
 }
 
 
 residuals.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) {
-  pred <- predict(object, scale_back = scale_back, include_ids = FALSE, ...)
-  result <- pred$residuals
+
+  vars <- object$input$vars
+  idvar <- object$input$idvar
+  dayvar <- object$input$dayvar
+  beepvar <- object$input$beepvar
+
+  res <- .predict_mlVAR_train(object, scale_back = scale_back)
+  result <- res$residuals
+
   if (include_ids) {
-    id_cols <- c(object$input$idvar, object$input$dayvar, object$input$beepvar)
-    ids <- object$input$originalData[, id_cols, drop = FALSE]
+    ids <- object$input$originalData[, c(idvar, dayvar, beepvar), drop = FALSE]
     result <- cbind(ids, result)
   }
+
   return(result)
 }
 

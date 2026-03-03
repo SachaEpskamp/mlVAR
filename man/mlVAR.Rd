@@ -111,13 +111,9 @@ Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis
 \value{
 \code{mlVAR} returns an \code{mlVAR} object.
 
-\code{predict.mlVAR} returns a list of class \code{"mlVARpredictions"} with the following elements:
-  \item{predicted}{A data frame with predicted (fitted) values for each variable. Has the same number of rows as the original input data (or \code{newdata}), with \code{NA} for rows that could not be predicted (e.g., first observation per person-day lost to lagging, or rows with missing data).}
-  \item{residuals}{A data frame of residuals (observed minus predicted), same dimensions as \code{predicted}.}
-  \item{data}{A data frame of observed values on the same scale as \code{predicted} and \code{residuals}.}
-  \item{ids}{(If \code{include_ids = TRUE}) A data frame containing the \code{idvar}, \code{dayvar}, and \code{beepvar} columns, aligned to \code{predicted}/\code{residuals}/\code{data}.}
+\code{predict.mlVAR} returns a data frame of predicted (fitted) values with the same number of rows as the original input data (or \code{newdata}). Rows that could not be predicted (e.g., first observation per person-day lost to lagging, or rows with missing data) contain \code{NA}. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
 
-\code{residuals.mlVAR} returns a data frame of residuals. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
+\code{residuals.mlVAR} returns a data frame of residuals with the same structure as \code{predict.mlVAR}.
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
