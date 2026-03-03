@@ -143,30 +143,352 @@ summary.mlVAR <- function(
 }
 
 
-residuals.mlVAR <- function(object, ...) {
-  if (is.null(object$step1_residuals)) {
-    stop("No step 1 residuals found. Only available for estimator = 'lmer'.")
+## Internal helper: augment data for prediction (mirrors the augmentation pipeline in mlVAR.R)
+.augment_mlVAR_data <- function(data, model, idvar, dayvar, beepvar, scaleWithin, vars, estimator) {
+  augData <- data
+
+  # Fill missing beeps:
+  beepsPerDay <- dplyr::summarize(
+    augData %>% dplyr::group_by(.data[[idvar]], .data[[dayvar]]),
+    first = min(.data[[beepvar]], na.rm = TRUE),
+    last = max(.data[[beepvar]], na.rm = TRUE),
+    .groups = "drop"
+  )
+
+  allBeeps <- expand.grid(
+    unique(data[[idvar]]),
+    unique(data[[dayvar]]),
+    seq(min(data[[beepvar]], na.rm = TRUE), max(data[[beepvar]], na.rm = TRUE)),
+    stringsAsFactors = FALSE
+  )
+  names(allBeeps) <- c(idvar, dayvar, beepvar)
+
+  allBeeps <- allBeeps %>%
+    dplyr::left_join(beepsPerDay, by = c(idvar, dayvar)) %>%
+    dplyr::group_by(.data[[idvar]], .data[[dayvar]]) %>%
+    dplyr::filter(.data[[beepvar]] >= .data$first, .data[[beepvar]] <= .data$last) %>%
+    dplyr::arrange(.data[[idvar]], .data[[dayvar]], .data[[beepvar]])
+
+  augData <- augData %>%
+    dplyr::right_join(allBeeps, by = c(idvar, dayvar, beepvar)) %>%
+    dplyr::arrange(.data[[idvar]], .data[[dayvar]], .data[[beepvar]])
+
+  # Create predictors from model:
+  UniquePredModel <- model[!duplicated(model[, c("pred", "lag", "type")]), c("pred", "lag", "type", "predID")]
+
+  if (!estimator %in% c("Mplus", "JAGS")) {
+    for (i in seq_len(nrow(UniquePredModel))) {
+      if (UniquePredModel$type[i] == "between") {
+        if (estimator == "lmer") {
+          augData[[UniquePredModel$predID[i]]] <- ave(
+            augData[[UniquePredModel$pred[i]]],
+            augData[[idvar]],
+            FUN = aveMean
+          )
+        }
+      } else {
+        # Lag:
+        augData[[UniquePredModel$predID[i]]] <- ave(
+          augData[[UniquePredModel$pred[i]]],
+          augData[[idvar]], augData[[dayvar]],
+          FUN = function(x) aveLag(x, UniquePredModel$lag[i])
+        )
+        # Center within person:
+        augData[[UniquePredModel$predID[i]]] <- ave(
+          augData[[UniquePredModel$predID[i]]],
+          augData[[idvar]],
+          FUN = function(xx) aveCenter(xx, scale = scaleWithin)
+        )
+      }
+    }
   }
 
+  # Within-person standardize dependent vars if scaleWithin = TRUE:
+  if (isTRUE(scaleWithin)) {
+    for (v in vars) {
+      augData[[v]] <- ave(augData[[v]], augData[[idvar]], FUN = function(xx) aveScaleNoCenter(xx))
+    }
+  }
+
+  # Remove NAs:
+  Vars <- unique(c(model$dep, model$predID, idvar, beepvar, dayvar))
+  augData <- na.omit(augData[, Vars])
+
+  return(augData)
+}
+
+
+## Internal helper: predict on newdata
+.predict_mlVAR_newdata <- function(object, newdata, scale_back = TRUE, include_ids = TRUE) {
+
+  vars <- object$input$vars
   idvar <- object$input$idvar
   dayvar <- object$input$dayvar
   beepvar <- object$input$beepvar
+  estimator <- object$input$estimator
 
-  augData <- object$data
-  origData <- object$input$originalData
+  # Auto-create DAY and BEEP if they were auto-generated during fitting:
+  if (!dayvar %in% names(newdata)) {
+    newdata[[dayvar]] <- 1
+  }
+  if (!beepvar %in% names(newdata)) {
+    newdata[[beepvar]] <- ave(seq_len(nrow(newdata)), newdata[[idvar]], newdata[[dayvar]], FUN = seq_along)
+  }
 
+  # Validate newdata columns:
+  required_cols <- c(idvar, dayvar, beepvar, vars)
+  missing_cols <- required_cols[!required_cols %in% names(newdata)]
+  if (length(missing_cols) > 0) {
+    stop(paste0("The following columns are missing from newdata: ", paste(missing_cols, collapse = ", ")))
+  }
+
+  # Store original newdata for output:
+  origNewdata <- newdata[, required_cols, drop = FALSE]
+
+  # Apply full_detrend if model used it:
+  if (isTRUE(object$input$full_detrend)) {
+    obs_idx <- ave(seq_len(nrow(newdata)), newdata[[idvar]], FUN = seq_along)
+    obs_per_cluster <- table(newdata[[idvar]])
+    if (length(unique(obs_per_cluster)) != 1) {
+      warning("'full_detrend' was used in model fitting but newdata has unequal observations per cluster. Detrending not applied to newdata.")
+    } else {
+      for (v in vars) {
+        newdata[[v]] <- ave(newdata[[v]], obs_idx, FUN = Scale)
+      }
+    }
+  }
+
+  # Apply grand-mean scaling (using training set parameters):
+  if (isTRUE(object$input$scaled)) {
+    for (v in vars) {
+      newdata[[v]] <- (newdata[[v]] - object$input$scale_means[v]) / object$input$scale_sds[v]
+    }
+  }
+
+  # Augment newdata (fill missing beeps, create lagged predictors, center):
+  augData <- .augment_mlVAR_data(
+    data = newdata,
+    model = object$model,
+    idvar = idvar,
+    dayvar = dayvar,
+    beepvar = beepvar,
+    scaleWithin = isTRUE(object$input$scaleWithin),
+    vars = vars,
+    estimator = estimator
+  )
+
+  # Initialize result matrices aligned to original newdata:
+  nOrig <- nrow(origNewdata)
+  predicted_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = length(vars)))
+  colnames(predicted_df) <- vars
+  residuals_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = length(vars)))
+  colnames(residuals_df) <- vars
+
+  # Match augData rows back to original newdata:
   aug_key <- paste(augData[[idvar]], augData[[dayvar]], augData[[beepvar]], sep = "_")
-  orig_key <- paste(origData[[idvar]], origData[[dayvar]], origData[[beepvar]], sep = "_")
-
+  orig_key <- paste(origNewdata[[idvar]], origNewdata[[dayvar]], origNewdata[[beepvar]], sep = "_")
   idx <- match(orig_key, aug_key)
+  matched <- !is.na(idx)
+
+  if (estimator == "lmer") {
+    lmerResults <- object$output$temporal
+
+    for (i in seq_along(vars)) {
+      pred_vals <- predict(lmerResults[[i]], newdata = augData, allow.new.levels = TRUE)
+      obs_vals <- augData[[vars[i]]]
+      resid_vals <- obs_vals - pred_vals
+
+      predicted_df[matched, vars[i]] <- pred_vals[idx[matched]]
+      residuals_df[matched, vars[i]] <- resid_vals[idx[matched]]
+    }
+
+  } else if (estimator == "lm") {
+    # lm: can only predict for subjects seen during training
+    train_IDs <- unique(object$data[[idvar]])
+    new_IDs <- unique(origNewdata[[idvar]])
+    unknown_IDs <- new_IDs[!new_IDs %in% train_IDs]
+    if (length(unknown_IDs) > 0) {
+      warning(paste0("The following subject IDs in newdata were not in the training data ",
+                     "and cannot be predicted with estimator = 'lm': ",
+                     paste(unknown_IDs, collapse = ", ")))
+    }
+
+    for (i in seq_along(vars)) {
+      pred_all <- rep(NA_real_, nrow(augData))
+
+      for (p in seq_along(train_IDs)) {
+        id <- train_IDs[p]
+        sub_rows <- which(augData[[idvar]] == id)
+        if (length(sub_rows) == 0) next
+
+        sub <- augData[sub_rows, , drop = FALSE]
+        lm_obj <- object$output[[i]][[p]]
+        pred_vals <- predict(lm_obj, newdata = sub)
+        pred_all[sub_rows] <- as.numeric(pred_vals)
+      }
+
+      obs_vals <- augData[[vars[i]]]
+      resid_vals <- obs_vals - pred_all
+
+      predicted_df[matched, vars[i]] <- pred_all[idx[matched]]
+      residuals_df[matched, vars[i]] <- resid_vals[idx[matched]]
+    }
+
+  } else {
+    stop(paste0("predict.mlVAR with newdata not implemented for estimator = '", estimator, "'"))
+  }
+
+  # Scale back to original metric if requested:
+  if (scale_back && isTRUE(object$input$scaled)) {
+    for (v in vars) {
+      predicted_df[[v]] <- predicted_df[[v]] * object$input$scale_sds[v] + object$input$scale_means[v]
+      residuals_df[[v]] <- residuals_df[[v]] * object$input$scale_sds[v]
+    }
+  }
+
+  # Observed data on same scale as predictions:
+  if (scale_back) {
+    observed_df <- origNewdata[, vars, drop = FALSE]
+  } else {
+    observed_df <- origNewdata[, vars, drop = FALSE]
+    if (isTRUE(object$input$scaled)) {
+      for (v in vars) {
+        observed_df[[v]] <- (observed_df[[v]] - object$input$scale_means[v]) / object$input$scale_sds[v]
+      }
+    }
+  }
+
+  result <- list(
+    predicted = predicted_df,
+    residuals = residuals_df,
+    data = observed_df
+  )
+
+  if (include_ids) {
+    result$ids <- origNewdata[, c(idvar, dayvar, beepvar), drop = FALSE]
+  }
+
+  class(result) <- "mlVARpredictions"
+  return(result)
+}
+
+
+predict.mlVAR <- function(object, newdata, scale_back = TRUE, include_ids = TRUE, ...) {
 
   vars <- object$input$vars
-  result <- as.data.frame(matrix(NA, nrow = nrow(origData), ncol = length(vars)))
-  colnames(result) <- vars
+  idvar <- object$input$idvar
+  dayvar <- object$input$dayvar
+  beepvar <- object$input$beepvar
+  estimator <- object$input$estimator
 
+  # Dispatch to newdata handler:
+  if (!missing(newdata)) {
+    return(.predict_mlVAR_newdata(object, newdata, scale_back = scale_back, include_ids = include_ids))
+  }
+
+  # --- Predict on training data ---
+  origData <- object$input$originalData
+  augData <- object$data
+
+  nOrig <- nrow(origData)
+  predicted_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = length(vars)))
+  colnames(predicted_df) <- vars
+  residuals_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = length(vars)))
+  colnames(residuals_df) <- vars
+
+  # Match augData rows to originalData via composite key:
+  aug_key <- paste(augData[[idvar]], augData[[dayvar]], augData[[beepvar]], sep = "_")
+  orig_key <- paste(origData[[idvar]], origData[[dayvar]], origData[[beepvar]], sep = "_")
+  idx <- match(orig_key, aug_key)
   matched <- !is.na(idx)
-  result[matched, ] <- object$step1_residuals[idx[matched], vars, drop = FALSE]
 
+  if (estimator == "lmer") {
+    lmerResults <- object$output$temporal
+
+    for (i in seq_along(vars)) {
+      fit_vals <- fitted(lmerResults[[i]])
+      resid_vals <- residuals(lmerResults[[i]])
+
+      # Align to augData rows (names = rownames of data used in lmer):
+      aug_fit <- rep(NA_real_, nrow(augData))
+      aug_res <- rep(NA_real_, nrow(augData))
+      aug_positions <- match(names(fit_vals), rownames(augData))
+      aug_fit[aug_positions] <- as.numeric(fit_vals)
+      aug_res[aug_positions] <- as.numeric(resid_vals)
+
+      predicted_df[matched, vars[i]] <- aug_fit[idx[matched]]
+      residuals_df[matched, vars[i]] <- aug_res[idx[matched]]
+    }
+
+  } else if (estimator == "lm") {
+    IDs <- unique(augData[[idvar]])
+
+    for (i in seq_along(vars)) {
+      aug_fit <- rep(NA_real_, nrow(augData))
+      aug_res <- rep(NA_real_, nrow(augData))
+
+      for (p in seq_along(IDs)) {
+        lm_obj <- object$output[[i]][[p]]
+        fit_vals <- fitted(lm_obj)
+        resid_vals <- stats::residuals(lm_obj)
+
+        # Names = rownames from augData subset for this subject:
+        aug_positions <- match(names(fit_vals), rownames(augData))
+        aug_fit[aug_positions] <- as.numeric(fit_vals)
+        aug_res[aug_positions] <- as.numeric(resid_vals)
+      }
+
+      predicted_df[matched, vars[i]] <- aug_fit[idx[matched]]
+      residuals_df[matched, vars[i]] <- aug_res[idx[matched]]
+    }
+
+  } else {
+    stop(paste0("predict.mlVAR not implemented for estimator = '", estimator, "'"))
+  }
+
+  # Scale back to original metric if requested:
+  if (scale_back && isTRUE(object$input$scaled)) {
+    for (v in vars) {
+      predicted_df[[v]] <- predicted_df[[v]] * object$input$scale_sds[v] + object$input$scale_means[v]
+      residuals_df[[v]] <- residuals_df[[v]] * object$input$scale_sds[v]
+    }
+  }
+
+  # Observed data on same scale as predictions:
+  if (scale_back) {
+    observed_df <- origData[, vars, drop = FALSE]
+  } else {
+    observed_df <- origData[, vars, drop = FALSE]
+    if (isTRUE(object$input$scaled)) {
+      for (v in vars) {
+        observed_df[[v]] <- (observed_df[[v]] - object$input$scale_means[v]) / object$input$scale_sds[v]
+      }
+    }
+  }
+
+  result <- list(
+    predicted = predicted_df,
+    residuals = residuals_df,
+    data = observed_df
+  )
+
+  if (include_ids) {
+    result$ids <- origData[, c(idvar, dayvar, beepvar), drop = FALSE]
+  }
+
+  class(result) <- "mlVARpredictions"
+  return(result)
+}
+
+
+residuals.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) {
+  pred <- predict(object, scale_back = scale_back, include_ids = FALSE, ...)
+  result <- pred$residuals
+  if (include_ids) {
+    id_cols <- c(object$input$idvar, object$input$dayvar, object$input$beepvar)
+    ids <- object$input$originalData[, id_cols, drop = FALSE]
+    result <- cbind(ids, result)
+  }
   return(result)
 }
 

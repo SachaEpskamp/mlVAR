@@ -339,7 +339,9 @@ mlVAR <- function(
     }
   }
 
-    
+  # Store original data before any transformation (for predict/residuals):
+  originalData <- data[, c(idvar, dayvar, beepvar, vars), drop = FALSE]
+
   # Standardize per observation position across clusters:
   if (full_detrend) {
     obs_idx <- ave(seq_len(nrow(data)), data[[idvar]], FUN = seq_along)
@@ -350,6 +352,16 @@ mlVAR <- function(
     for (v in vars) {
       data[[v]] <- ave(data[[v]], obs_idx, FUN = Scale)
     }
+  }
+
+  # Store scaling parameters (after detrend, before scale):
+  if (scale) {
+    scale_means <- sapply(data[, vars, drop = FALSE], mean, na.rm = TRUE)
+    scale_sds <- sapply(data[, vars, drop = FALSE], sd, na.rm = TRUE)
+    scale_sds[scale_sds == 0] <- 1
+  } else {
+    scale_means <- setNames(rep(0, length(vars)), vars)
+    scale_sds <- setNames(rep(1, length(vars)), vars)
   }
 
   # Standardize across all variables:
@@ -563,7 +575,12 @@ mlVAR <- function(
     estimator = estimator,
     temporal = temporal,
     AR = AR,
-    originalData = data[, c(idvar, dayvar, beepvar), drop = FALSE],
+    originalData = originalData,
+    scale_means = scale_means,
+    scale_sds = scale_sds,
+    scaled = scale,
+    scaleWithin = scaleWithin,
+    full_detrend = full_detrend,
     idvar = idvar,
     dayvar = dayvar,
     beepvar = beepvar

@@ -1,6 +1,7 @@
 Changes in Version 0.6
   - Added mlGGM() function for multi-level Gaussian Graphical Model estimation using single-step nodewise regression, simultaneously estimating within-cluster and between-cluster partial correlation networks from cross-sectional multilevel data
-  - Added residuals() S3 method for mlVAR objects, returning step 1 residuals aligned to the original input data structure (with NAs for rows without residuals)
+  - Added predict() S3 method for mlVAR objects: returns fitted values, residuals, and observed data aligned to original input data (with NAs for unpredictable rows). Supports scale_back argument to return values on original data scale, include_ids to include id/day/beep columns, and newdata for out-of-sample predictions. Works with both lmer and lm estimators.
+  - Rewrote residuals() S3 method for mlVAR objects as a wrapper around predict(), now supporting scale_back and include_ids arguments
   - Added .groups = "drop" to all grouped summarise/summarize calls to suppress dplyr 1.0.0+ lifecycle warnings
   - Fixed bug in Stepwise(): selected wrong model at each iteration step
   - Fixed bug in importMplus: temporal fixed effects were only extracted for the first outcome variable

@@ -1,11 +1,17 @@
 \name{mlVAR}
 \alias{mlVAR}
+\alias{predict.mlVAR}
+\alias{residuals.mlVAR}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Multilevel VAR Estimation for Multiple Time Series
 }
 \description{
 The function \code{mlVAR} computes estimates of the multivariate vector autoregression model. This model returns three stuctures: temporal effects (e.g., lag-1 regression weights), contemporaneous relationships (correlations or partial correlations) and between-subject effects (correlations and partial correlations). See details.
+
+The \code{predict} method computes fitted values and residuals from the temporal model (step 1). It returns predictions aligned to the original input data, with \code{NA} for rows that cannot be predicted (e.g., the first observation per person-day lost to lagging, or rows with missing data). When \code{newdata} is supplied, predictions are computed for the new data using the fitted model(s). For \code{estimator = "lmer"}, new subjects are predicted using fixed effects only (\code{allow.new.levels = TRUE}); for \code{estimator = "lm"}, prediction is only possible for subjects seen during training.
+
+The \code{residuals} method is a convenience wrapper around \code{predict} that returns only the residuals.
 }
 \usage{
 mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
@@ -14,12 +20,18 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
                  "orthogonal", "fixed", "unique"), temporal =
                  c("default", "correlated", "orthogonal", "fixed",
                  "unique"), nCores = 1, verbose = TRUE, compareToLags,
-                 scale = TRUE, scaleWithin = FALSE, AR = FALSE, 
-                 MplusSave = TRUE, MplusName = "mlVAR", iterations = "(2000)", 
+                 scale = TRUE, scaleWithin = FALSE, AR = FALSE,
+                 MplusSave = TRUE, MplusName = "mlVAR", iterations = "(2000)",
                  chains = nCores, signs, orthogonal,
                  trueMeans, na.rm = TRUE,
                  full_detrend = FALSE
   )
+
+\method{predict}{mlVAR}(object, newdata, scale_back = TRUE,
+        include_ids = TRUE, \dots)
+
+\method{residuals}{mlVAR}(object, scale_back = TRUE,
+        include_ids = TRUE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -78,6 +90,18 @@ Logical, should missing values be removed when checking for rank deficiency and 
   \item{full_detrend}{
 Logical. If \code{TRUE}, standardize each variable per observation position across all subjects before estimation. For example, all first measurements are standardized together, all second measurements together, etc. This removes systematic occasion effects (e.g., time-of-day trends in ESM data). Requires a balanced design (equal number of observations per subject). Applied before grand-mean standardization (\code{scale}). Defaults to \code{FALSE}.
 }
+  \item{object}{
+An \code{mlVAR} object (for \code{predict} and \code{residuals} methods).
+}
+  \item{newdata}{
+Optional data frame with the same structure as the training data. Must contain the \code{idvar}, \code{dayvar}, \code{beepvar}, and all \code{vars} columns. If supplied, predictions are computed for this new data using the fitted model. For \code{estimator = "lmer"}, new subjects (not seen during training) receive fixed-effects-only predictions. For \code{estimator = "lm"}, prediction is only available for subjects in the training data.
+}
+  \item{scale_back}{
+Logical. If \code{TRUE} (default) and the model was fitted with \code{scale = TRUE}, predicted values and residuals are back-transformed to the original scale of the data. If \code{FALSE}, values are returned on the standardized (model) scale.
+}
+  \item{include_ids}{
+Logical. If \code{TRUE} (default), the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are included in the output. For \code{predict}, they are returned as the \code{ids} element of the list. For \code{residuals}, they are prepended as columns in the returned data frame.
+}
 }
 \details{
 This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals. See arxiv.org/abs/1609.04156 for details.
@@ -85,7 +109,15 @@ This function estimates the multi-level VAR model to obtain temporal, contempora
 Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis and read the results into R. Mplus 8 is required for this estimation. It is recommended to set \code{contemporaneous = "fixed"}, though not required. For the estimation of contemporaneous random effects, the signs of contemporaneous *correlations * (not partial correlations) need be set (or estimated) via the \code{signs} argument.
 }
 \value{
-An \code{mlVAR} object 
+\code{mlVAR} returns an \code{mlVAR} object.
+
+\code{predict.mlVAR} returns a list of class \code{"mlVARpredictions"} with the following elements:
+  \item{predicted}{A data frame with predicted (fitted) values for each variable. Has the same number of rows as the original input data (or \code{newdata}), with \code{NA} for rows that could not be predicted (e.g., first observation per person-day lost to lagging, or rows with missing data).}
+  \item{residuals}{A data frame of residuals (observed minus predicted), same dimensions as \code{predicted}.}
+  \item{data}{A data frame of observed values on the same scale as \code{predicted} and \code{residuals}.}
+  \item{ids}{(If \code{include_ids = TRUE}) A data frame containing the \code{idvar}, \code{dayvar}, and \code{beepvar} columns, aligned to \code{predicted}/\code{residuals}/\code{data}.}
+
+\code{residuals.mlVAR} returns a data frame of residuals. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
@@ -99,7 +131,7 @@ Sacha Epskamp (mail@sachaepskamp.com)
 }
 
 \seealso{
-\code{\link{mlVARcompare}}, \code{\link{summary.mlVAR}}, \code{\link{plot.mlVAR}}
+\code{\link{mlVARcompare}}, \code{\link{summary.mlVAR}}, \code{\link{plot.mlVAR}}, \code{\link{mlGGM}}
 }
 \examples{
 \dontrun{
