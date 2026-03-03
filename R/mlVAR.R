@@ -292,11 +292,14 @@ mlVAR <- function(
   if (!is.numeric(data[[beepvar]])){
     stop("Beep variable is not numeric")
   }
-  
-  
+
+  # Store original data before any row removal or transformation (for predict/residuals):
+  # Uses all current vars; if vars are later dropped by rank check, predict() selects the kept ones.
+  originalData <- data[, c(idvar, dayvar, beepvar, vars), drop = FALSE]
+
   # Remove NA day or beeps:
   data <- data[!is.na(data[[idvar]]) & !is.na(data[[dayvar]]) & !is.na(data[[beepvar]]), ]
-  
+
   ### STANDARDIZE DATA ###
   # Test for rank-deficient:
   if (na.rm){
@@ -338,9 +341,6 @@ mlVAR <- function(
         data[[v]] <-  ave(data[[v]],data[[idvar]], FUN = function(xx)aveCenter(xx)) + trueMeans[[v]][match(data[[idvar]], trueMeans[[idvar]])]
     }
   }
-
-  # Store original data before any transformation (for predict/residuals):
-  originalData <- data[, c(idvar, dayvar, beepvar, vars), drop = FALSE]
 
   # Standardize per observation position across clusters:
   if (full_detrend) {
