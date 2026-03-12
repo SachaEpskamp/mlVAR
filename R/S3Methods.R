@@ -483,6 +483,103 @@ residuals.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) 
 }
 
 
+### resimulate S3 method ###
+
+resimulate <- function(object, ...) UseMethod("resimulate")
+
+resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) {
+
+  vars <- object$input$vars
+  idvar <- object$input$idvar
+  dayvar <- object$input$dayvar
+  beepvar <- object$input$beepvar
+  lags <- object$input$lags
+  estimator <- object$input$estimator
+  origData <- object$input$originalData
+
+  # Determine IDs (lmer stores them, lm does not):
+  if (!is.null(object$IDs)) {
+    IDs <- object$IDs
+  } else {
+    IDs <- unique(object$data[[idvar]])
+  }
+
+  nOrig <- nrow(origData)
+  nVar <- length(vars)
+
+  # Initialize result with NAs:
+  sim_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = nVar))
+  colnames(sim_df) <- vars
+
+  for (i in seq_along(IDs)) {
+    # Rows for this person in originalData:
+    person_rows <- which(origData[[idvar]] == IDs[i])
+    if (length(person_rows) == 0) next
+
+    person_data <- origData[person_rows, , drop = FALSE]
+
+    # Valid rows: non-NA day and beep:
+    valid <- !is.na(person_data[[dayvar]]) & !is.na(person_data[[beepvar]])
+    n_valid <- sum(valid)
+    if (n_valid < 2) next
+
+    # Extract person-specific parameters:
+    mu_i <- object$results$mu$subject[[i]]
+    beta_i <- object$results$Beta$subject[[i]]
+    kappa_i <- object$results$Theta$prec$subject[[i]]
+
+    # Simulate:
+    if (max(lags) == 1) {
+      # Lag-1: use graphicalVAR::graphicalVARsim
+      sim_data <- graphicalVAR::graphicalVARsim(
+        nTime = n_valid,
+        beta = beta_i[, , 1],
+        kappa = kappa_i,
+        mean = as.numeric(mu_i)
+      )
+    } else {
+      # Multi-lag: use simulateVAR with covariance matrix
+      pars_list <- lapply(seq_along(lags), function(k) beta_i[, , k])
+      sigma_i <- solve(kappa_i)
+      sim_data <- simulateVAR(
+        pars = pars_list,
+        means = as.numeric(mu_i),
+        lags = lags,
+        Nt = n_valid,
+        residuals = sigma_i
+      )
+    }
+
+    # Place simulated values into valid positions:
+    valid_rows <- person_rows[valid]
+    sim_df[valid_rows, ] <- as.matrix(sim_data)[, seq_len(nVar)]
+
+    # Apply variable-specific missingness from original data:
+    for (v in vars) {
+      na_in_var <- is.na(person_data[[v]])
+      if (any(na_in_var)) {
+        sim_df[person_rows[na_in_var], v] <- NA
+      }
+    }
+  }
+
+  # Scale back to original metric:
+  if (scale_back && isTRUE(object$input$scaled)) {
+    for (v in vars) {
+      sim_df[[v]] <- sim_df[[v]] * object$input$scale_sds[v] + object$input$scale_means[v]
+    }
+  }
+
+  # Add id/day/beep columns:
+  if (include_ids) {
+    ids <- origData[, c(idvar, dayvar, beepvar), drop = FALSE]
+    sim_df <- cbind(ids, sim_df)
+  }
+
+  return(sim_df)
+}
+
+
 ### mlGGM S3 methods ###
 
 print.mlGGM <- function(x, ...) {

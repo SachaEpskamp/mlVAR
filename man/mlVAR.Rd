@@ -2,6 +2,8 @@
 \alias{mlVAR}
 \alias{predict.mlVAR}
 \alias{residuals.mlVAR}
+\alias{resimulate}
+\alias{resimulate.mlVAR}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Multilevel VAR Estimation for Multiple Time Series
@@ -12,6 +14,8 @@ The function \code{mlVAR} computes estimates of the multivariate vector autoregr
 The \code{predict} method computes fitted values and residuals from the temporal model (step 1). It returns predictions aligned to the original input data, with \code{NA} for rows that cannot be predicted (e.g., the first observation per person-day lost to lagging, or rows with missing data). When \code{newdata} is supplied, predictions are computed for the new data using the fitted model(s). For \code{estimator = "lmer"}, new subjects are predicted using fixed effects only (\code{allow.new.levels = TRUE}); for \code{estimator = "lm"}, prediction is only possible for subjects seen during training.
 
 The \code{residuals} method is a convenience wrapper around \code{predict} that returns only the residuals.
+
+The \code{resimulate} method generates simulated data from a fitted \code{mlVAR} model using person-specific estimated parameters (fixed + random effects). For each person, a VAR time series is simulated using their estimated temporal effects (Beta), contemporaneous precision matrix (Theta), and person-specific means (mu). The output has the same dimensions and missingness pattern as the original input data, making it suitable for posterior predictive checks and model diagnostics.
 }
 \usage{
 mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
@@ -31,6 +35,11 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
         include_ids = TRUE, \dots)
 
 \method{residuals}{mlVAR}(object, scale_back = TRUE,
+        include_ids = TRUE, \dots)
+
+resimulate(object, \dots)
+
+\method{resimulate}{mlVAR}(object, scale_back = TRUE,
         include_ids = TRUE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -114,6 +123,8 @@ Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis
 \code{predict.mlVAR} returns a data frame of predicted (fitted) values with the same number of rows as the original input data (or \code{newdata}). Rows that could not be predicted (e.g., first observation per person-day lost to lagging, or rows with missing data) contain \code{NA}. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
 
 \code{residuals.mlVAR} returns a data frame of residuals with the same structure as \code{predict.mlVAR}.
+
+\code{resimulate.mlVAR} returns a data frame of simulated values with the same number of rows as the original input data. NAs appear in the same positions as in the original data. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
