@@ -100,16 +100,16 @@ Logical, should missing values be removed when checking for rank deficiency and 
 Logical. If \code{TRUE}, standardize each variable per observation position across all subjects before estimation. For example, all first measurements are standardized together, all second measurements together, etc. This removes systematic occasion effects (e.g., time-of-day trends in ESM data). Requires a balanced design (equal number of observations per subject). Applied before grand-mean standardization (\code{scale}). Defaults to \code{FALSE}.
 }
   \item{object}{
-An \code{mlVAR} object (for \code{predict} and \code{residuals} methods).
+An \code{mlVAR} object (for \code{predict}, \code{residuals}, and \code{resimulate} methods).
 }
   \item{newdata}{
 Optional data frame with the same structure as the training data. Must contain the \code{idvar}, \code{dayvar}, \code{beepvar}, and all \code{vars} columns. If supplied, predictions are computed for this new data using the fitted model. For \code{estimator = "lmer"}, new subjects (not seen during training) receive fixed-effects-only predictions. For \code{estimator = "lm"}, prediction is only available for subjects in the training data.
 }
   \item{scale_back}{
-Logical. If \code{TRUE} (default) and the model was fitted with \code{scale = TRUE}, predicted values and residuals are back-transformed to the original scale of the data. If \code{FALSE}, values are returned on the standardized (model) scale.
+Logical. If \code{TRUE} (default) and the model was fitted with \code{scale = TRUE}, values are back-transformed to the original scale of the data. If \code{FALSE}, values are returned on the standardized (model) scale. Applies to \code{predict}, \code{residuals}, and \code{resimulate}.
 }
   \item{include_ids}{
-Logical. If \code{TRUE} (default), the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are included in the output. For \code{predict}, they are returned as the \code{ids} element of the list. For \code{residuals}, they are prepended as columns in the returned data frame.
+Logical. If \code{TRUE} (default), the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended as columns in the returned data frame. Applies to \code{predict}, \code{residuals}, and \code{resimulate}.
 }
 }
 \details{
@@ -170,8 +170,18 @@ plot(fit1, "contemporaneous", title = "Estimated contemporaneous relationships",
 # Compare between-subjects partial correlations:
 layout(t(1:2))
 plot(Model, "between", title = "True between-subjects relationships", layout = "circle")
-plot(fit1, "between", title = "Estimated between-subjects relationships", 
+plot(fit1, "between", title = "Estimated between-subjects relationships",
     layout = "circle")
+
+# Predictions and residuals (same number of rows as input data):
+pred <- predict(fit1)
+res <- residuals(fit1)
+dim(pred)
+dim(res)
+
+# Resimulate data from the fitted model (posterior predictive check):
+sim <- resimulate(fit1)
+dim(sim)  # same dimensions as original data
 
 # Run same model with non-correlated temporal relationships and fixed-effect model:
 fit2 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
