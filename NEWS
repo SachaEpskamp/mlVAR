@@ -1,6 +1,6 @@
 Changes in Version 0.6.1
   - Fixed resimulate(): person-specific means are now computed as stationary means (I - B_between)^{-1} * alpha_i rather than using the raw lmer intercept, which was incorrect when between-person predictors are uncentered
-  - Added resimulate() arguments: nTime for simulating custom-length time series per person, and keep_missing to toggle whether the original variable-level missingness pattern is applied
+  - Added resimulate() arguments: nTime for simulating custom-length time series per person, keep_missing to toggle whether the original variable-level missingness pattern is applied, and variance ("model" or "empirical") to choose between model-implied or person-specific empirical innovation covariance
   - Added full_detrend argument to mlVAR() for removing systematic occasion effects (e.g., time-of-day trends) before estimation
 
 Changes in Version 0.6

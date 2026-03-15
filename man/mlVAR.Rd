@@ -41,7 +41,8 @@ resimulate(object, \dots)
 
 \method{resimulate}{mlVAR}(object, scale_back = TRUE,
         include_ids = TRUE, nTime = NULL,
-        keep_missing = TRUE, \dots)
+        keep_missing = TRUE,
+        variance = c("model", "empirical"), \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -117,6 +118,9 @@ Optional integer specifying the number of time points to simulate per person. Wh
 }
   \item{keep_missing}{
 Logical. If \code{TRUE} (default) and \code{nTime = NULL}, the original variable-level missingness pattern is applied to the simulated data: any cell that was \code{NA} in the original data is set to \code{NA} in the output. If \code{FALSE}, all valid (non-structural-NA) positions receive simulated values. Ignored when \code{nTime} is specified.
+}
+  \item{variance}{
+Character string specifying how the innovation covariance matrix is obtained. \code{"model"} (default) uses the model-implied covariance derived from the estimated contemporaneous precision matrix (person-specific GGM structure, population-level residual scale). \code{"empirical"} uses the empirical covariance of each person's residuals from the fitted model, providing person-specific innovation variances. Falls back to \code{"model"} for persons with too few residuals.
 }
 }
 \details{

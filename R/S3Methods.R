@@ -515,7 +515,10 @@ resimulate <- function(object, ...) UseMethod("resimulate")
 }
 
 resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
-                             nTime = NULL, keep_missing = TRUE, ...) {
+                             nTime = NULL, keep_missing = TRUE,
+                             variance = c("model", "empirical"), ...) {
+
+  variance <- match.arg(variance)
 
   vars <- object$input$vars
   idvar <- object$input$idvar
@@ -539,6 +542,32 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
   B_between <- .get_B_between(object)
   stat_transform <- solve(diag(nVar) - B_between)
 
+  # Pre-compute empirical residual covariances if needed:
+  if (variance == "empirical") {
+    resid_df <- residuals(object, scale_back = FALSE, include_ids = TRUE)
+    emp_cov_list <- vector("list", length(IDs))
+    for (i in seq_along(IDs)) {
+      person_resid <- resid_df[resid_df[[idvar]] == IDs[i], vars, drop = FALSE]
+      person_resid <- person_resid[complete.cases(person_resid), , drop = FALSE]
+      if (nrow(person_resid) > nVar) {
+        emp_cov_list[[i]] <- cov(person_resid)
+      } else {
+        # Too few residuals: fall back to model-based
+        emp_cov_list[[i]] <- NULL
+      }
+    }
+  }
+
+  # Helper to get innovation covariance for person i:
+  .get_sigma <- function(i) {
+    if (variance == "empirical" && !is.null(emp_cov_list[[i]])) {
+      return(emp_cov_list[[i]])
+    }
+    # Model-based: invert precision matrix
+    kappa_i <- object$results$Theta$prec$subject[[i]]
+    return(solve(kappa_i))
+  }
+
   if (custom_nTime) {
     # Custom nTime: output has nIDs * nTime rows, id + vars columns only
     sim_list <- vector("list", length(IDs))
@@ -546,9 +575,8 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
     for (i in seq_along(IDs)) {
       alpha_i <- object$results$mu$subject[[i]]
       beta_i <- object$results$Beta$subject[[i]]
-      kappa_i <- object$results$Theta$prec$subject[[i]]
       mu_i <- as.numeric(stat_transform %*% alpha_i)
-      sigma_i <- solve(kappa_i)
+      sigma_i <- .get_sigma(i)
 
       if (max(lags) == 1) {
         sim_data <- simulateVAR(
@@ -603,11 +631,10 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
     # Extract person-specific parameters:
     alpha_i <- object$results$mu$subject[[i]]
     beta_i <- object$results$Beta$subject[[i]]
-    kappa_i <- object$results$Theta$prec$subject[[i]]
 
     # Compute stationary mean: (I - B_between)^{-1} * alpha_i
     mu_i <- as.numeric(stat_transform %*% alpha_i)
-    sigma_i <- solve(kappa_i)
+    sigma_i <- .get_sigma(i)
 
     # Simulate:
     if (max(lags) == 1) {
