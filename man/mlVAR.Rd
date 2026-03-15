@@ -40,7 +40,8 @@ mlVAR(data, vars, idvar, lags = 1, dayvar, beepvar,
 resimulate(object, \dots)
 
 \method{resimulate}{mlVAR}(object, scale_back = TRUE,
-        include_ids = TRUE, \dots)
+        include_ids = TRUE, nTime = NULL,
+        keep_missing = TRUE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -109,7 +110,13 @@ Optional data frame with the same structure as the training data. Must contain t
 Logical. If \code{TRUE} (default) and the model was fitted with \code{scale = TRUE}, values are back-transformed to the original scale of the data. If \code{FALSE}, values are returned on the standardized (model) scale. Applies to \code{predict}, \code{residuals}, and \code{resimulate}.
 }
   \item{include_ids}{
-Logical. If \code{TRUE} (default), the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended as columns in the returned data frame. Applies to \code{predict}, \code{residuals}, and \code{resimulate}.
+Logical. If \code{TRUE} (default), the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended as columns in the returned data frame. Applies to \code{predict}, \code{residuals}, and \code{resimulate}. When \code{nTime} is specified in \code{resimulate}, only the \code{idvar} column is included.
+}
+  \item{nTime}{
+Optional integer specifying the number of time points to simulate per person. When \code{NULL} (default), the simulated data has the same number of rows as the original input data. When specified, each person gets exactly \code{nTime} time points, and the output has \code{nIDs * nTime} rows with the \code{idvar} and variable columns only (no \code{dayvar} or \code{beepvar}).
+}
+  \item{keep_missing}{
+Logical. If \code{TRUE} (default) and \code{nTime = NULL}, the original variable-level missingness pattern is applied to the simulated data: any cell that was \code{NA} in the original data is set to \code{NA} in the output. If \code{FALSE}, all valid (non-structural-NA) positions receive simulated values. Ignored when \code{nTime} is specified.
 }
 }
 \details{
@@ -124,7 +131,7 @@ Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis
 
 \code{residuals.mlVAR} returns a data frame of residuals with the same structure as \code{predict.mlVAR}.
 
-\code{resimulate.mlVAR} returns a data frame of simulated values with the same number of rows as the original input data. NAs appear in the same positions as in the original data. If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended.
+\code{resimulate.mlVAR} returns a data frame of simulated values. By default (when \code{nTime = NULL}), it has the same number of rows as the original input data, with NAs in the same positions as the original data (unless \code{keep_missing = FALSE}). If \code{include_ids = TRUE}, the \code{idvar}, \code{dayvar}, and \code{beepvar} columns are prepended. When \code{nTime} is specified, the output has \code{nIDs * nTime} rows with the \code{idvar} column and variable columns only. Person-specific stationary means are computed from the model parameters, and innovation covariances are derived from the estimated contemporaneous precision matrices.
 }
 \references{
 Bringmann, L. F., Vissers, N., Wichers, M., Geschwind, N., Kuppens, P., Peeters, F., ... & Tuerlinckx, F. (2013). A network approach to psychopathology: New insights into clinical longitudinal data. PloS one, 8(4), e60188.
@@ -182,6 +189,14 @@ dim(res)
 # Resimulate data from the fitted model (posterior predictive check):
 sim <- resimulate(fit1)
 dim(sim)  # same dimensions as original data
+
+# Resimulate with custom time series length (e.g., longer series):
+sim_long <- resimulate(fit1, nTime = 500)
+dim(sim_long)  # nIDs * 500 rows
+
+# Resimulate without applying original missingness pattern:
+sim_complete <- resimulate(fit1, keep_missing = FALSE)
+sum(is.na(sim_complete))  # only structural NAs (day/beep boundaries)
 
 # Run same model with non-correlated temporal relationships and fixed-effect model:
 fit2 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 

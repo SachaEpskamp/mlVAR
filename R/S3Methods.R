@@ -487,7 +487,35 @@ residuals.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) 
 
 resimulate <- function(object, ...) UseMethod("resimulate")
 
-resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...) {
+## Internal helper: extract B_between matrix from temporal models
+.get_B_between <- function(object) {
+  vars <- object$input$vars
+  nVar <- length(vars)
+  betweenMod <- object$model[object$model$type == "between", ]
+
+  B <- matrix(0, nVar, nVar)
+  rownames(B) <- colnames(B) <- vars
+
+  for (v in seq_along(vars)) {
+    if (object$input$estimator == "lmer") {
+      fe <- lme4::fixef(object$output$temporal[[v]])
+    } else {
+      # lm: average coefficients across subjects
+      fe <- colMeans(do.call(rbind, lapply(object$output[[v]], coef)))
+    }
+    for (j in seq_along(vars)) {
+      pid <- betweenMod$predID[betweenMod$dep == vars[v] & betweenMod$pred == vars[j]]
+      if (length(pid) > 0 && pid %in% names(fe)) {
+        B[v, j] <- fe[pid]
+      }
+    }
+  }
+
+  B
+}
+
+resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
+                             nTime = NULL, keep_missing = TRUE, ...) {
 
   vars <- object$input$vars
   idvar <- object$input$idvar
@@ -504,15 +532,64 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...)
     IDs <- unique(object$data[[idvar]])
   }
 
-  nOrig <- nrow(origData)
   nVar <- length(vars)
+  custom_nTime <- !is.null(nTime)
 
-  # Initialize result with NAs:
+  # Compute B_between and stationary mean transform:
+  B_between <- .get_B_between(object)
+  stat_transform <- solve(diag(nVar) - B_between)
+
+  if (custom_nTime) {
+    # Custom nTime: output has nIDs * nTime rows, id + vars columns only
+    sim_list <- vector("list", length(IDs))
+
+    for (i in seq_along(IDs)) {
+      alpha_i <- object$results$mu$subject[[i]]
+      beta_i <- object$results$Beta$subject[[i]]
+      kappa_i <- object$results$Theta$prec$subject[[i]]
+      mu_i <- as.numeric(stat_transform %*% alpha_i)
+      sigma_i <- solve(kappa_i)
+
+      if (max(lags) == 1) {
+        sim_data <- simulateVAR(
+          pars = beta_i[, , 1], means = mu_i,
+          Nt = nTime, residuals = sigma_i
+        )
+      } else {
+        pars_list <- lapply(seq_along(lags), function(k) beta_i[, , k])
+        sim_data <- simulateVAR(
+          pars = pars_list, means = mu_i, lags = lags,
+          Nt = nTime, residuals = sigma_i
+        )
+      }
+
+      person_df <- as.data.frame(as.matrix(sim_data)[, seq_len(nVar), drop = FALSE])
+      colnames(person_df) <- vars
+      person_df[[idvar]] <- IDs[i]
+      sim_list[[i]] <- person_df
+    }
+
+    sim_df <- do.call(rbind, sim_list)
+
+    # Scale back:
+    if (scale_back && isTRUE(object$input$scaled)) {
+      for (v in vars) {
+        sim_df[[v]] <- sim_df[[v]] * object$input$scale_sds[v] + object$input$scale_means[v]
+      }
+    }
+
+    # Reorder columns: id first, then vars
+    sim_df <- sim_df[, c(idvar, vars), drop = FALSE]
+    rownames(sim_df) <- NULL
+    return(sim_df)
+  }
+
+  # Default: match original data structure
+  nOrig <- nrow(origData)
   sim_df <- as.data.frame(matrix(NA_real_, nrow = nOrig, ncol = nVar))
   colnames(sim_df) <- vars
 
   for (i in seq_along(IDs)) {
-    # Rows for this person in originalData:
     person_rows <- which(origData[[idvar]] == IDs[i])
     if (length(person_rows) == 0) next
 
@@ -524,29 +601,25 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...)
     if (n_valid < 2) next
 
     # Extract person-specific parameters:
-    mu_i <- object$results$mu$subject[[i]]
+    alpha_i <- object$results$mu$subject[[i]]
     beta_i <- object$results$Beta$subject[[i]]
     kappa_i <- object$results$Theta$prec$subject[[i]]
 
+    # Compute stationary mean: (I - B_between)^{-1} * alpha_i
+    mu_i <- as.numeric(stat_transform %*% alpha_i)
+    sigma_i <- solve(kappa_i)
+
     # Simulate:
     if (max(lags) == 1) {
-      # Lag-1: use graphicalVAR::graphicalVARsim
-      sim_data <- graphicalVAR::graphicalVARsim(
-        nTime = n_valid,
-        beta = beta_i[, , 1],
-        kappa = kappa_i,
-        mean = as.numeric(mu_i)
+      sim_data <- simulateVAR(
+        pars = beta_i[, , 1], means = mu_i,
+        Nt = n_valid, residuals = sigma_i
       )
     } else {
-      # Multi-lag: use simulateVAR with covariance matrix
       pars_list <- lapply(seq_along(lags), function(k) beta_i[, , k])
-      sigma_i <- solve(kappa_i)
       sim_data <- simulateVAR(
-        pars = pars_list,
-        means = as.numeric(mu_i),
-        lags = lags,
-        Nt = n_valid,
-        residuals = sigma_i
+        pars = pars_list, means = mu_i, lags = lags,
+        Nt = n_valid, residuals = sigma_i
       )
     }
 
@@ -555,10 +628,12 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE, ...)
     sim_df[valid_rows, ] <- as.matrix(sim_data)[, seq_len(nVar)]
 
     # Apply variable-specific missingness from original data:
-    for (v in vars) {
-      na_in_var <- is.na(person_data[[v]])
-      if (any(na_in_var)) {
-        sim_df[person_rows[na_in_var], v] <- NA
+    if (keep_missing) {
+      for (v in vars) {
+        na_in_var <- is.na(person_data[[v]])
+        if (any(na_in_var)) {
+          sim_df[person_rows[na_in_var], v] <- NA
+        }
       }
     }
   }
