@@ -1,6 +1,12 @@
+Changes in Version 0.6.1
+  - Fixed resimulate(): person-specific means are now computed as stationary means (I - B_between)^{-1} * alpha_i rather than using the raw lmer intercept, which was incorrect when between-person predictors are uncentered
+  - Added resimulate() arguments: nTime for simulating custom-length time series per person, and keep_missing to toggle whether the original variable-level missingness pattern is applied
+  - Added full_detrend argument to mlVAR() for removing systematic occasion effects (e.g., time-of-day trends) before estimation
+
 Changes in Version 0.6
   - Added mlGGM() function for multi-level Gaussian Graphical Model estimation using single-step nodewise regression, simultaneously estimating within-cluster and between-cluster partial correlation networks from cross-sectional multilevel data
   - Added predict() S3 method for mlVAR objects: returns fitted values, residuals, and observed data aligned to original input data (with NAs for unpredictable rows). Supports scale_back argument to return values on original data scale, include_ids to include id/day/beep columns, and newdata for out-of-sample predictions. Works with both lmer and lm estimators.
+  - Added resimulate() S3 method for mlVAR objects: generates simulated data from a fitted model using person-specific parameters for posterior predictive checks
   - Rewrote residuals() S3 method for mlVAR objects as a wrapper around predict(), now supporting scale_back and include_ids arguments
   - Added .groups = "drop" to all grouped summarise/summarize calls to suppress dplyr 1.0.0+ lifecycle warnings
   - Fixed bug in Stepwise(): selected wrong model at each iteration step
