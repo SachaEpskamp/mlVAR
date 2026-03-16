@@ -120,7 +120,7 @@ Optional integer specifying the number of time points to simulate per person. Wh
 Logical. If \code{TRUE} (default) and \code{nTime = NULL}, the original variable-level missingness pattern is applied to the simulated data: any cell that was \code{NA} in the original data is set to \code{NA} in the output. If \code{FALSE}, all valid (non-structural-NA) positions receive simulated values. Ignored when \code{nTime} is specified.
 }
   \item{variance}{
-Character string specifying how the innovation covariance matrix is obtained. \code{"model"} (default) uses the model-implied covariance derived from the estimated contemporaneous precision matrix (person-specific GGM structure, population-level residual scale). \code{"empirical"} uses the empirical covariance of each person's residuals from the fitted model, providing person-specific innovation variances. Falls back to \code{"model"} for persons with too few residuals.
+Character string specifying how the innovation covariance matrix is obtained. \code{"model"} (default) uses the model-implied covariance derived from the estimated contemporaneous precision matrix (person-specific GGM structure, population-level residual scale). \code{"empirical"} uses the model's partial correlation structure (from the person-specific precision matrix) but scales it by the empirical standard deviations of each person's residuals, i.e., \code{SD \%*\% cov2cor(solve(kappa_i)) \%*\% SD}. Falls back to \code{"model"} for persons with too few residuals.
 }
 }
 \details{

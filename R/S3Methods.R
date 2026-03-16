@@ -542,30 +542,35 @@ resimulate.mlVAR <- function(object, scale_back = TRUE, include_ids = TRUE,
   B_between <- .get_B_between(object)
   stat_transform <- solve(diag(nVar) - B_between)
 
-  # Pre-compute empirical residual covariances if needed:
+  # Pre-compute empirical residual SDs if needed:
   if (variance == "empirical") {
     resid_df <- residuals(object, scale_back = FALSE, include_ids = TRUE)
-    emp_cov_list <- vector("list", length(IDs))
+    emp_sd_list <- vector("list", length(IDs))
     for (i in seq_along(IDs)) {
       person_resid <- resid_df[resid_df[[idvar]] == IDs[i], vars, drop = FALSE]
       person_resid <- person_resid[complete.cases(person_resid), , drop = FALSE]
       if (nrow(person_resid) > nVar) {
-        emp_cov_list[[i]] <- cov(person_resid)
+        emp_sd_list[[i]] <- apply(person_resid, 2, sd)
       } else {
         # Too few residuals: fall back to model-based
-        emp_cov_list[[i]] <- NULL
+        emp_sd_list[[i]] <- NULL
       }
     }
   }
 
   # Helper to get innovation covariance for person i:
   .get_sigma <- function(i) {
-    if (variance == "empirical" && !is.null(emp_cov_list[[i]])) {
-      return(emp_cov_list[[i]])
-    }
-    # Model-based: invert precision matrix
+    # Get model-based covariance from precision matrix:
     kappa_i <- object$results$Theta$prec$subject[[i]]
-    return(solve(kappa_i))
+    sigma_model <- solve(kappa_i)
+
+    if (variance == "empirical" && !is.null(emp_sd_list[[i]])) {
+      # Use model partial correlation structure, scaled by empirical SDs:
+      SD <- diag(emp_sd_list[[i]])
+      return(SD %*% cov2cor(sigma_model) %*% SD)
+    }
+
+    return(sigma_model)
   }
 
   if (custom_nTime) {
