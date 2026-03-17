@@ -8,7 +8,8 @@ Authors@R: c(
   person("Sacha", "Epskamp", email = "mail@sachaepskamp.com",role = c("aut", "cre")),
   person("Marie K.", "Deserno", role = c("aut")),
   person("Laura F.", "Bringmann", role = c("aut")),
-  person("Myrthe", "Veenman", role = c("ctb")))
+  person("Myrthe", "Veenman", role = c("ctb")),
+  person("Jonas M. B.", "Haslbeck", role = c("ctb")))
 Maintainer: Sacha Epskamp <mail@sachaepskamp.com>
 Description: Estimates the multi-level vector autoregression model on time-series data.
              Three network structures are obtained: temporal networks, contemporaneous
