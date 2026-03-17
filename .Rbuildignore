@@ -1,3 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.claude$
+^Extra information$
+^mlVAR\.Rcheck$

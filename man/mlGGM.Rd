@@ -143,7 +143,7 @@ Epskamp, S., Rhemtulla, M. T., & Borsboom, D. (2017). Generalized network psycho
 Sacha Epskamp
 }
 \examples{
-\donttest{
+\dontrun{
 # Generate simulated multilevel data with known GGM structure:
 library(bootnet)
 
