@@ -1001,9 +1001,37 @@ plot.mlVAR <-
     if (missing(order)){
       order <- x$input$vars
     }
-    
+
     if (!missing(subject) && SD){
       stop("'SD' not available for subject.")
+    }
+
+    # Validate 'lag' for temporal networks (before any bare subscript):
+    if (type == "temporal"){
+      nLags <- dim(x$results$Beta$mean)[3]
+      if (lag > nLags || lag < 1){
+        stop("'lag' exceeds the number of lags in the model (", nLags, ").")
+      }
+    }
+
+    # Validate 'subject' for network types that accept it (before any bare subscript):
+    if (!missing(subject)){
+      if (type == "temporal"){
+        nSubjects <- length(x$results$Beta$subject)
+      } else if (type == "contemporaneous"){
+        sub <- ifelse(partial, "pcor", "cor")
+        nSubjects <- length(x$results$Theta[[sub]]$subject)
+      } else {
+        nSubjects <- NA
+      }
+      if (!is.na(nSubjects)){
+        if (is.null(nSubjects) || nSubjects == 0){
+          stop("No subject-specific networks available in this model.")
+        }
+        if (!is.numeric(subject) || length(subject) != 1 || subject < 1 || subject > nSubjects){
+          stop("'subject' must be a single number between 1 and the number of subjects (", nSubjects, ").")
+        }
+      }
     }
     
     # If order is character, find ord as number. Else just set ord to order:

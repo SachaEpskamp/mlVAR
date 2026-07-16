@@ -13,11 +13,10 @@ movingWindow <- function(
   nEffects <- nAuto + nLagged
   
   # Create the moving window of autoLaggedVars:
+  # Note: maxEffects counts lagged predictors only (auto-regressions are always
+  # included and are not counted towards maxEffects), matching Stepwise().
   if (maxEffects > nEffects) stop("Window size is longer than number of effects to estimate. Moving window approach is not needed.")
-  
-  windowSize <- maxEffects - nAuto
-  
- 
+
   Combs <- matrix(,nrow = nLagged, ncol = maxEffects)
   samp <- sample(1:nLagged)
   for (i in 1:nrow(Combs)){

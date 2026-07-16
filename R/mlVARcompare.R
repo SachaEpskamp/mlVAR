@@ -55,8 +55,13 @@ print.mlVARcompare <- function(x,...){
     cat("\nModels for variable",names(x)[i],"\n")
     print(x[[i]],row.names=FALSE)
     
-    cat("Best fitting model AIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal," & temporal model: ",x[[i]]$temporalModel)[which.min(x[[i]]$aic)],"\n")
-    cat("Best fitting model BIC:",paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal," & temporal model: ",x[[i]]$temporalModel)[which.min(x[[i]]$bic)],"\n")    
+    labels <- paste0("lags: ",x[[i]]$lags," & temporal: ",x[[i]]$temporal," & temporal model: ",x[[i]]$temporalModel)
+
+    bestAIC <- which(x[[i]]$aic == min(x[[i]]$aic))
+    cat("Best fitting model AIC:",paste0(labels[bestAIC[1]], if (length(bestAIC) > 1) " (tie)" else ""),"\n")
+
+    bestBIC <- which(x[[i]]$bic == min(x[[i]]$bic))
+    cat("Best fitting model BIC:",paste0(labels[bestBIC[1]], if (length(bestBIC) > 1) " (tie)" else ""),"\n")
     cat("\n")
   }
   
