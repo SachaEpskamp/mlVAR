@@ -40,17 +40,19 @@ parSim <- function(
   expr <- as.expression(substitute(expression))
   
   if (nCores > 1){
-    nClust <- nCores - 1
-    
-    
+    nClust <- max(1L, nCores)
+
+
     ######################
     ## use Socket clusters
     if (!debug){
-      cl <- makePSOCKcluster(nClust)  
+      cl <- makePSOCKcluster(nClust)
     } else {
       cl <- makePSOCKcluster(nClust, outfile = "clusterLOG.txt")
     }
-    
+    # Ensure the cluster is always stopped, including on any error path.
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+
     #     # Start clusters:
     #     cl <- makeCluster(getOption("cl.cores", nCores))
     #     
@@ -80,9 +82,8 @@ parSim <- function(
       df$errorMessage <- ''
       df
     })
-    
-    # Stop the cluster:
-    stopCluster(cl)
+
+    # Cluster is stopped via on.exit registered at creation.
   } else {
     # Export:
     if (!missing(export)){

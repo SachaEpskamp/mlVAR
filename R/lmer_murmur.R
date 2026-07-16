@@ -46,9 +46,12 @@ lmer_mlVAR <-
     
     if (nCores > 1){
       # Make clusters:
-      nClust <- nCores - 1
+      nClust <- max(1L, nCores)
       cl <- makePSOCKcluster(nClust)
-      
+      # Ensure the cluster is always stopped, including on the fixed/unique
+      # contemporaneous branches and on any error path.
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+
       # Export to cluster:
       clusterExport(cl, c("Outcomes", "model", "temporal", "contemporaneous", "idvar", "augData"), envir = environment())
       
@@ -482,10 +485,9 @@ lmer_mlVAR <-
           # Run lmer:
           return(suppressMessages(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))))
         })
-        
-        # Stop the cluster:
-        stopCluster(cl)
-        
+
+        # Cluster is stopped via on.exit registered at creation.
+
       } else {
         if (verbose){
           pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)

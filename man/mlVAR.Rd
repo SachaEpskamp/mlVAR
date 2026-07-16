@@ -74,7 +74,7 @@ The estimator to be used. \code{"lmer"} for sequential univariate multi-level es
   \item{temporal}{
 How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise. \code{"unique"} uses \code{lm} to estimate an unique model for each subject.
 }
-\item{nCores}{Number of cores to use in computation}
+\item{nCores}{Number of worker processes to use in computation. When greater than 1, this many parallel workers are spawned (previously one fewer worker than requested was used).}
   \item{verbose}{
 Logical indicating if console messages and the progress bar should be shown.
 }
