@@ -54,7 +54,7 @@ Data frame
 Vectors of variables to include in the analysis
 }
   \item{idvar}{
-String indicating the subject ID
+String indicating the subject ID. This argument is required: multilevel estimation requires multiple subjects. For single-subject VAR estimation, see the \code{graphicalVAR} package.
 }
   \item{lags}{
 Vector indicating the lags to include

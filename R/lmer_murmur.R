@@ -447,8 +447,10 @@ lmer_mlVAR <-
         
         Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
       }
-      lmerResults2 <- Results[["Theta"]]
-      
+      # No second-step lmer models are fitted for contemporaneous = "fixed"/"unique";
+      # lmerResults2 stays NULL so output$contemporaneous is NULL rather than a
+      # type-inconsistent modelCov object.
+
     } else {
       ### TWO STEP METHOD ###
       resid[[idvar]] <- augData[[idvar]]

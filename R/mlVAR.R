@@ -93,6 +93,12 @@ mlVAR <- function(
     warning("0 in 'lags' ignored; contemporaneous relationships are estimated by default.")
     lags <- lags[lags!=0]
   }
+  # Nuclear option on JAGS (checked before match.arg so users of the disabled
+  # Bayesian path get an informative message instead of a generic match.arg error):
+  if (identical(estimator, "JAGS")){
+    stop("'JAGS' estimator is not implemented yet and expected in a later version of mlVAR.")
+  }
+
   # First check the estimation options:
   # method <- match.arg(method)
   estimator <- match.arg(estimator)
@@ -100,11 +106,6 @@ mlVAR <- function(
   # betweenSubjects <- match.arg(betweenSubjects)
   # temporal <- match.arg(temporal)
   betweenSubjects <- "GGM"
-  
-  # Nuclear option on JAGS:
-  if (estimator == "JAGS"){
-    stop("'JAGS' estimator is not implemented yet and expected in a later version of mlVAR.")
-  }
   
   #   # Only estimate omega when estimator is JAGS
   #   if (estOmega & estimator != "JAGS"){
@@ -239,19 +240,18 @@ mlVAR <- function(
   
   # Check input:
   stopifnot(!missing(vars))
-  stopifnot(!missing(idvar))
   if (!is.character(vars) ||  !all(vars %in% names(data))){
     stop("'vars' must be a string vector indicating column names of the data.")
   }
-  
+
   # input list (to include in output):
   # input <- list(vars = vars, lags = lags, estimator=estimator,temporal = temporal)
-  
-  # Add day id if missing:
+
+  # idvar is required: a single implicit subject would fail inside lmer
+  # (random effects require at least two groups), so give an informative error:
   if (missing(idvar))
   {
-    idvar <- "ID"
-    data[[idvar]] <- 1
+    stop("'idvar' must be supplied; multilevel estimation requires multiple subjects. For single-subject VAR, see the graphicalVAR package.")
   } else {
     if (!is.character(idvar) || length(idvar) != 1 || !idvar %in% names(data)){
       stop("'idvar' must be a string indicating a column name of the data.")
@@ -313,7 +313,9 @@ mlVAR <- function(
   
   if (rnk < length(vars)){
     # Which node is not being nice?
-    keep <- qrX$pivot[1:rnk]
+    # sort() preserves the original input order of the retained variables
+    # (qr pivot order would otherwise silently reorder nodes in all outputs):
+    keep <- sort(qrX$pivot[1:rnk])
     discard <- vars[!seq_along(vars)%in%keep]
     
     warning(paste0("The following variables are linearly dependent on other columns, and therefore dropped from the mlVAR analysis:\n",
