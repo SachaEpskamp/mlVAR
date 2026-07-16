@@ -56,7 +56,17 @@ summary.mlVAR <- function(
   
   # Temporal parameters
   if ("temporal" %in% show){
-    
+
+    # Defensive: all temporal parameter arrays must have nVar^2 * nLag elements.
+    # Guards against silent R vector recycling if a results array is malformed.
+    nTemporal <- nVar^2 * nLag
+    if (length(c(object$results$Beta$mean)) != nTemporal ||
+        length(c(object$results$Beta$SE))   != nTemporal ||
+        length(c(object$results$Beta$P))    != nTemporal ||
+        length(c(object$results$Beta$SD))   != nTemporal){
+      stop("Temporal parameter arrays (Beta mean/SE/P/SD) have inconsistent lengths; cannot build summary.")
+    }
+
     TemporalDF <- data.frame(
       from  = rep(rep(vars,each=nVar),nLag),
       to =  rep(rep(vars,times=nVar),nLag),

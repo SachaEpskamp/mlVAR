@@ -340,7 +340,7 @@ lmer_mlVAR <-
         
         
       } else {
-        Beta_SD <- array(0,c(nVar,nVar,length(unique(model$lag))))
+        Beta_SD <- array(0,c(nVar,nVar,length(lags)))
         Beta_subject <- NULL
         
         ### STORE RESULTS ###
