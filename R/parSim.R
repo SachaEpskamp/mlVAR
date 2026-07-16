@@ -18,11 +18,16 @@ parSim <- function(
   AllConditions <- do.call(expand.grid,c(dots,list(rep=seq_len(reps),stringsAsFactors=FALSE)))
   
   # Exclude cases:
-  if (!missing(exclude)){
+  # 'exclude' holds conditions describing rows to DROP. Previously the code did
+  # filter(!!!exprs), which KEEPS rows matching the conditions - the exact
+  # opposite of excluding them. We now negate: a row is dropped if it matches
+  # ANY exclude expression, so combine them with OR and keep the complement.
+  if (!missing(exclude) && !is.null(exclude) && length(exclude) > 0){
     exprs <- lapply(exclude, function(ex) {
       if (inherits(ex, "formula")) rlang::f_rhs(ex) else rlang::parse_expr(ex)
     })
-    AllConditions <- AllConditions %>% filter(!!!exprs)
+    combined <- Reduce(function(a, b) rlang::expr((!!a) | (!!b)), exprs)
+    AllConditions <- AllConditions %>% filter(!(!!combined))
   }
   
   

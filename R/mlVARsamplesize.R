@@ -8,18 +8,10 @@ mlVARsample <- function(
   nCores = 1,
   ... # mlVAR options
 ){       
-  if (any(nSample > length(object$IDs))){ # what if vector 
-    stop("Not possible to have a number of individuals greater than the number of individuals in original mlVAR object")  # if one of nSample, can be a vector 
-  }
-
   if (!identical(object$input$lags,1)){
     stop("Only supported for lags = 1")
   }
-  
-  args <- commandArgs(trailingOnly=TRUE)
-  if (length(args)==0){
-    args <- 1
-  }
+
   cor0 <- function(x,y,...){
     if (sum(!is.na(x)) < 2 || sum(!is.na(y)) < 2 || sd(x,na.rm=TRUE)==0 | sd(y,na.rm=TRUE) == 0){
       return(0)
@@ -111,7 +103,22 @@ mlVARsample <- function(
     Beta <- Beta[keep]
     Means <- Means[keep]
   }
-  
+
+  # Validate the requested sample sizes against the number of subjects that
+  # actually survive the improper-subject filtering above (non-stationary Beta
+  # or outlying contemporaneous variance are dropped). Checking this before the
+  # filtering (as was done originally) used a too-high subject count and could
+  # let nSample exceed the number of usable subjects, causing sample() in the
+  # simulation to error obscurely.
+  nUsable <- length(Beta)
+  if (any(nSample > nUsable)){
+    stop(paste0("Requested nSample (max ", max(nSample),
+                ") exceeds the number of subjects available for simulation (",
+                nUsable, " survived filtering out of ", length(object$IDs),
+                " subjects in the original mlVAR object). Improper or ",
+                "non-stationary subjects are removed before simulation."))
+  }
+
   ### SIMULATION ###
   Results <- parSim(
     # timepoints conditions:
@@ -158,7 +165,7 @@ mlVARsample <- function(
       # adjust missingness 
       # missingness 
       total_obs <- nrow(simData)
-      rows_na <- sample(nrow(simData), pMissing * total_obs)
+      rows_na <- sample(nrow(simData), round(pMissing * total_obs))
       simData[rows_na,input$vars] <- NA 
       
       # Fit model 
