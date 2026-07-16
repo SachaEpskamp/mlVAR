@@ -590,27 +590,28 @@ lmer_mlVAR <-
       
       # Compute random effects:
       Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <-  vector("list",nRandom)
-      
-      
+
+      # Posthoc thetas for abnormal variances (computed once, outside the
+      # loop, and named by subject ID so lookup below is robust):
+      Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
+        cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
+      })
+      names(Theta_posthoc) <- as.character(unique(augData[[idvar]]))
+
       for (p in 1:nRandom){
         Gamma_Theta_subject[[p]] <- Gamma_Theta_fixed +  do.call(rbind,lapply(seq_along(lmerResults2),function(i){
           res <- rep(0,nVar)
           res[-i] <- unlist(ranefs[[i]][[idvar]][p,])
           res
         }))
-        
-        
-        # Posthoc thetas for abnormal variances:
-        Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
-          cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
-        })
-        
-        
+
+
         Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
         Theta_subject_cov[[p]] <- forcePositive(corpcor::pseudoinverse(Theta_subject_prec[[p]]))
         if (sum(diag(Theta_subject_cov[[p]])) > 10*sum(diag(Theta_fixed_cov))){
-          # if cov is too big, replace with sample cov:
-          Theta_subject_cov[[p]]  <- Theta_posthoc[[p]]
+          # if cov is too big, replace with sample cov (look up by subject ID
+          # corresponding to row p of the random effects):
+          Theta_subject_cov[[p]]  <- Theta_posthoc[[rownames(ranefs[[1]][[idvar]])[p]]]
         }
         Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
         
