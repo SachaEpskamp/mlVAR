@@ -168,8 +168,21 @@ mlVARsample <- function(
       rows_na <- sample(nrow(simData), round(pMissing * total_obs))
       simData[rows_na,input$vars] <- NA 
       
-      # Fit model 
-      input <- input[!(names(input) %in% c("nSample", "nTime", "pMissing"))]
+      # Fit model.
+      # object$input records more than mlVAR()'s own arguments (originalData,
+      # scale_means/scale_sds and scaled are kept there for predict/residuals),
+      # and 'dots' adds mlVARsample's arguments, so pass on only what mlVAR()
+      # actually accepts. 'data' is supplied separately just below.
+      input <- input[names(input) %in% setdiff(names(formals(mlVAR::mlVAR)), "data")]
+
+      # 'dayvar' and 'beepvar' are accepted by mlVAR() but survive the filter
+      # above holding names that do not exist in simData: mlVAR() stores the
+      # "DAY"/"BEEP" columns it adds itself, or columns of the original data,
+      # while simData only holds 'vars' and 'id'. simData is one uninterrupted,
+      # equally spaced series per subject, which is exactly what mlVAR() assumes
+      # when both are absent, so drop them and let mlVAR() regenerate them.
+      input$dayvar <- NULL
+      input$beepvar <- NULL
 
       Res <- do.call(mlVAR::mlVAR,c(list(data=simData),input))
       
