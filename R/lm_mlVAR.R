@@ -78,17 +78,24 @@ lm_mlVAR <-
     # Compute THETA
     
     
-    # Make residuals data frame:
-    
+    # Make residuals data frame (as data.frame, not matrix, so that a
+    # non-numeric id variable does not coerce the residual columns to
+    # character):
+
     Resids <- do.call(rbind,lapply(seq_along(IDs),function(id){
-      mat <- cbind(
-        do.call(cbind,lapply(seq_along(lmResults),function(i){
-          stats::resid(lmResults[[i]][[id]])
-        })),
-        IDs[[id]]
-      )
-      colnames(mat) <- c(Outcomes,idvar)
-      mat
+      resList <- lapply(seq_along(lmResults),function(i){
+        as.vector(stats::resid(lmResults[[i]][[id]]))
+      })
+      # Residual vectors must have equal length across outcomes (guaranteed
+      # after mlVAR's na.omit of the augmented data):
+      if (length(unique(sapply(resList,length))) != 1){
+        stop("Residual vectors differ in length across outcomes for subject '",
+             IDs[[id]],"'; cannot compute contemporaneous effects.")
+      }
+      df <- as.data.frame(resList)
+      names(df) <- Outcomes
+      df[[idvar]] <- IDs[[id]]
+      df
     }))
     
     
@@ -98,7 +105,7 @@ lm_mlVAR <-
       if (contemporaneous == "unique"){
         # Compute observed residuals covariances:
         Theta_subject <- lapply(seq_along(IDs),function(i){
-          Theta <- forcePositive(cov(Resids[Resids[,idvar] == IDs[i], Outcomes],use="pairwise.complete.obs"))
+          Theta <- forcePositive(cov(Resids[Resids[[idvar]] == IDs[i], Outcomes],use="pairwise.complete.obs"))
           colnames(Theta) <- rownames(Theta) <- Outcomes
           Theta
         })
@@ -139,7 +146,7 @@ lm_mlVAR <-
         formula <- as.formula(mod)
         
         # Run lmer:
-        lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = as.data.frame(Resids),REML=FALSE, ...))
+        lmerResults2[[i]] <- suppressWarnings(lmer(formula, data = Resids,REML=FALSE, ...))
         
         if (verbose){
           setTxtProgressBar(pb, i)

@@ -1,3 +1,6 @@
+Changes in Version 0.7
+  - Fixed estimator = "lm" crashing for non-numeric (e.g. character) subject IDs: per-subject residuals were collected in a matrix together with the id column, coercing all residuals to character and breaking the contemporaneous estimation (cov() error for contemporaneous = "unique"/"fixed", cryptic random-effects error for "correlated"/"orthogonal"). Residuals are now stored in a type-preserving data frame; results for numeric IDs are unchanged
+
 Changes in Version 0.6.1
   - Fixed resimulate(): person-specific means are now computed as stationary means (I - B_between)^{-1} * alpha_i rather than using the raw lmer intercept, which was incorrect when between-person predictors are uncentered
   - Added resimulate() arguments: nTime for simulating custom-length time series per person, keep_missing to toggle whether the original variable-level missingness pattern is applied, and variance ("model" or "empirical") to choose between model-implied or person-specific empirical innovation covariance
