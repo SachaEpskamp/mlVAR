@@ -4,6 +4,7 @@ Title: Multi-Level Vector Autoregression
 Version: 0.7
 Depends: R (>= 3.3.0)
 Imports: lme4,  arm, qgraph, dplyr (>= 1.0.0), clusterGeneration, mvtnorm, corpcor, abind, methods, parallel, MplusAutomation, graphicalVAR, rlang
+Suggests: bootnet
 Authors@R: c(
   person("Sacha", "Epskamp", email = "mail@sachaepskamp.com",role = c("aut", "cre")),
   person("Marie K.", "Deserno", role = c("aut")),

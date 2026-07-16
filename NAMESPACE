@@ -55,9 +55,9 @@ importFrom("stats", "coef", "fitted", "lm", "predict", "resid")
 
   importFrom("graphics", "plot")
   importFrom("methods", "is")
-  importFrom("stats", "AIC", "BIC", "as.formula", "ave", "cov",
-             "cov2cor", "na.omit", "pnorm", "quantile", "rWishart",
-             "residuals", "rnorm", "runif", "sd")
+  importFrom("stats", "AIC", "BIC", "as.formula", "ave", "complete.cases",
+             "cov", "cov2cor", "na.omit", "pnorm", "quantile", "rWishart",
+             "residuals", "rnorm", "runif", "sd", "setNames")
   importFrom("utils", "head", "setTxtProgressBar", "txtProgressBar")
   
   

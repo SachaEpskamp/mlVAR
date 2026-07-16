@@ -122,6 +122,9 @@ Logical. If \code{TRUE} (default) and \code{nTime = NULL}, the original variable
   \item{variance}{
 Character string specifying how the innovation covariance matrix is obtained. \code{"model"} (default) uses the model-implied covariance derived from the estimated contemporaneous precision matrix (person-specific GGM structure, population-level residual scale). \code{"empirical"} uses the model's partial correlation structure (from the person-specific precision matrix) but scales it by the empirical standard deviations of each person's residuals, i.e., \code{SD \%*\% cov2cor(solve(kappa_i)) \%*\% SD}. Falls back to \code{"model"} for persons with too few residuals.
 }
+  \item{\dots}{
+Additional arguments (currently unused).
+}
 }
 \details{
 This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals. See arxiv.org/abs/1609.04156 for details.
@@ -203,6 +206,11 @@ dim(sim_long)  # nIDs * 500 rows
 # Resimulate without applying original missingness pattern:
 sim_complete <- resimulate(fit1, keep_missing = FALSE)
 sum(is.na(sim_complete))  # only structural NAs (day/beep boundaries)
+
+# Resimulate with empirical innovation variances (model partial correlations,
+# scaled by person-specific empirical residual SDs):
+sim_emp <- resimulate(fit1, variance = "empirical")
+dim(sim_emp)
 
 # Run same model with non-correlated temporal relationships and fixed-effect model:
 fit2 <- mlVAR(Model$Data, vars = Model$vars, idvar = Model$idvar, lags = 1, 
