@@ -1,4 +1,4 @@
-Changes in Version 0.7
+Changes in Version 0.7.1
   - Fixed mlVARsample() erroring with "unused arguments (originalData = ...)". It re-fits the model by passing the stored input$ of the original fit back to mlVAR(), but that list records more than mlVAR()'s own arguments (originalData, scale_means/scale_sds and scaled are kept for predict/residuals). Only the arguments mlVAR() accepts are now passed on.
   - Fixed the example in ?mlVAR0, which simulated its data with mlVARsim0() - a function that no longer exists. It now uses mlVARsim() and the current plot API.
   - estimator = "JAGS" now gives its informative "not implemented yet" error message; previously this check was unreachable because match.arg() rejected "JAGS" first with a generic 'arg should be one of' error
