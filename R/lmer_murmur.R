@@ -46,9 +46,12 @@ lmer_mlVAR <-
     
     if (nCores > 1){
       # Make clusters:
-      nClust <- nCores - 1
+      nClust <- max(1L, nCores)
       cl <- makePSOCKcluster(nClust)
-      
+      # Ensure the cluster is always stopped, including on the fixed/unique
+      # contemporaneous branches and on any error path.
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+
       # Export to cluster:
       clusterExport(cl, c("Outcomes", "model", "temporal", "contemporaneous", "idvar", "augData"), envir = environment())
       
@@ -340,7 +343,7 @@ lmer_mlVAR <-
         
         
       } else {
-        Beta_SD <- array(0,c(nVar,nVar,length(unique(model$lag))))
+        Beta_SD <- array(0,c(nVar,nVar,length(lags)))
         Beta_subject <- NULL
         
         ### STORE RESULTS ###
@@ -444,8 +447,10 @@ lmer_mlVAR <-
         
         Results[["Theta"]] <- modelCov(cov = modelArray(mean = Theta_fixed, subject = Theta_posthoc))
       }
-      lmerResults2 <- Results[["Theta"]]
-      
+      # No second-step lmer models are fitted for contemporaneous = "fixed"/"unique";
+      # lmerResults2 stays NULL so output$contemporaneous is NULL rather than a
+      # type-inconsistent modelCov object.
+
     } else {
       ### TWO STEP METHOD ###
       resid[[idvar]] <- augData[[idvar]]
@@ -482,10 +487,9 @@ lmer_mlVAR <-
           # Run lmer:
           return(suppressMessages(suppressWarnings(lmer(formula, data = resid,REML=FALSE, ...))))
         })
-        
-        # Stop the cluster:
-        stopCluster(cl)
-        
+
+        # Cluster is stopped via on.exit registered at creation.
+
       } else {
         if (verbose){
           pb <- txtProgressBar(min = 0, max = length(Outcomes), style = 3)
@@ -588,27 +592,28 @@ lmer_mlVAR <-
       
       # Compute random effects:
       Gamma_Theta_subject <- Theta_subject_prec <- Theta_subject_cov <- Theta_subject_cor <-  vector("list",nRandom)
-      
-      
+
+      # Posthoc thetas for abnormal variances (computed once, outside the
+      # loop, and named by subject ID so lookup below is robust):
+      Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
+        cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
+      })
+      names(Theta_posthoc) <- as.character(unique(augData[[idvar]]))
+
       for (p in 1:nRandom){
         Gamma_Theta_subject[[p]] <- Gamma_Theta_fixed +  do.call(rbind,lapply(seq_along(lmerResults2),function(i){
           res <- rep(0,nVar)
           res[-i] <- unlist(ranefs[[i]][[idvar]][p,])
           res
         }))
-        
-        
-        # Posthoc thetas for abnormal variances:
-        Theta_posthoc <- lapply(unique(augData[[idvar]]),function(id){
-          cov(resid[augData[[idvar]] == id,Outcomes],use = "pairwise.complete.obs")
-        })
-        
-        
+
+
         Theta_subject_prec[[p]] <- forcePositive(D %*% (diag(length(Outcomes)) - Gamma_Theta_subject[[p]]))
         Theta_subject_cov[[p]] <- forcePositive(corpcor::pseudoinverse(Theta_subject_prec[[p]]))
         if (sum(diag(Theta_subject_cov[[p]])) > 10*sum(diag(Theta_fixed_cov))){
-          # if cov is too big, replace with sample cov:
-          Theta_subject_cov[[p]]  <- Theta_posthoc[[p]]
+          # if cov is too big, replace with sample cov (look up by subject ID
+          # corresponding to row p of the random effects):
+          Theta_subject_cov[[p]]  <- Theta_posthoc[[rownames(ranefs[[1]][[idvar]])[p]]]
         }
         Theta_subject_cor[[p]] <- forcePositive(cov2cor(forcePositive(Theta_subject_cov[[p]])))
         

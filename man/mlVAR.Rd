@@ -54,7 +54,7 @@ Data frame
 Vectors of variables to include in the analysis
 }
   \item{idvar}{
-String indicating the subject ID
+String indicating the subject ID. This argument is required: multilevel estimation requires multiple subjects. For single-subject VAR estimation, see the \code{graphicalVAR} package.
 }
   \item{lags}{
 Vector indicating the lags to include
@@ -74,7 +74,7 @@ The estimator to be used. \code{"lmer"} for sequential univariate multi-level es
   \item{temporal}{
 How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise. \code{"unique"} uses \code{lm} to estimate an unique model for each subject.
 }
-\item{nCores}{Number of cores to use in computation}
+\item{nCores}{Number of worker processes to use in computation. When greater than 1, this many parallel workers are spawned (previously one fewer worker than requested was used).}
   \item{verbose}{
 Logical indicating if console messages and the progress bar should be shown.
 }
@@ -130,6 +130,8 @@ Additional arguments (currently unused).
 This function estimates the multi-level VAR model to obtain temporal, contemporaneous and between-subject effects using nodewise estimation. Temporal and between-subject effects are obtained directly from the models and contemporaneous effects are estimated post-hoc by correlating the residuals. See arxiv.org/abs/1609.04156 for details.
 
 Setting \code{estimator = "Mplus"} will generate a Mplus model, run the analysis and read the results into R. Mplus 8 is required for this estimation. It is recommended to set \code{contemporaneous = "fixed"}, though not required. For the estimation of contemporaneous random effects, the signs of contemporaneous *correlations * (not partial correlations) need be set (or estimated) via the \code{signs} argument.
+
+The p-values reported for fixed effects (e.g., in \code{summary} and used to determine significance in \code{plot}) are Wald-type tests based on a normal approximation of the sampling distribution of each fixed-effect estimate (i.e., \code{2 * (1 - pnorm(abs(estimate / SE)))}). This approximation is asymptotic and does not account for the uncertainty in the estimated degrees of freedom of the multilevel model. With few subjects the normal approximation can be anti-conservative (a t-distribution would be more appropriate), so these p-values should be treated as heuristic rather than exact, especially in small samples.
 }
 \value{
 \code{mlVAR} returns an \code{mlVAR} object.

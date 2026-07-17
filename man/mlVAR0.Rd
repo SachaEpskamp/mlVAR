@@ -125,58 +125,25 @@ nPerson <- 25
 nTime <- 25
 
 # Simulate model and data:
-Model <- mlVARsim0(nPerson,nVar,nTime,sparsity = 0.5)
+Model <- mlVARsim(nPerson, nVar, nTime, beta_sparsity = 0.5)
 
-# Run mlVAR0:
-Res <- mlVAR0(Model)
+# Run mlVAR0 (deprecated; see mlVAR() for the current implementation):
+Res <- mlVAR0(Model$Data, vars = Model$vars, idvar = Model$idvar)
 
-# Compare true fixed model with significant edges of estimated fixed model:
+# Compare true temporal model with significant edges of the estimated model.
+# Note that the simulated model is plotted by plot.mlVAR, which uses
+# type = "temporal", while plot.mlVAR0 still uses the older type names
+# ("fixed", "SD" and "subject"):
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.labels = TRUE)
-plot(Res,"fixed", title = "Estimated model", layout = "circle", onlySig = TRUE, 
+plot(Model, "temporal", title = "True model", layout = "circle", edge.labels = TRUE)
+plot(Res, "fixed", title = "Estimated model", layout = "circle", onlySig = TRUE,
         alpha = 0.05, edge.labels = TRUE)
 
-# Compare true and estimated individual differences in parameters:
+# Compare temporal networks of subject 1:
 layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.color = "blue", 
+plot(Model, "temporal", subject = 1, title = "True model", layout = "circle",
         edge.labels = TRUE)
-plot(Res,"fixed", title = "Estimated model", layout = "circle", edge.color = "blue", 
+plot(Res, "subject", subject = 1, title = "Estimated model", layout = "circle",
         edge.labels = TRUE)
-
-# Compare networks of subject 1:
-layout(t(1:2))
-plot(Model,"subject",subject = 1, title = "True model",layout="circle", 
-        edge.labels = TRUE)
-plot(Res,"subject",subject = 1,title = "Estimated model", layout = "circle", 
-        edge.labels = TRUE)
-
-
-
-### Large network ###
-nVar <- 10
-nPerson <- 50
-nTime <- 50
-
-# Simulate model and data:
-Model <- mlVARsim0(nPerson,nVar,nTime, sparsity = 0.5)
-
-# Run orthogonal mlVAR:
-Res <- mlVAR0(Model, orthogonal = TRUE)
-
-# Compare true fixed model with significant edges of estimated fixed model:
-layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle")
-plot(Res,"fixed", title = "Estimated model", layout = "circle", onlySig = TRUE, 
-        alpha = 0.05)
-
-# Compare true and estimated individual differences in parameters:
-layout(t(1:2))
-plot(Model,"fixed", title = "True model",layout="circle", edge.color = "blue")
-plot(Res,"fixed", title = "Estimated model", layout = "circle", edge.color = "blue")
-
-# Compare networks of subject 1:
-layout(t(1:2))
-plot(Model,"subject",subject = 1, title = "True model",layout="circle")
-plot(Res,"subject",subject = 1,title = "Estimated model", layout = "circle")
 }
 }

@@ -11,6 +11,8 @@ Estimates within-cluster and between-cluster partial correlation networks from c
 
 For each variable \eqn{y_i}, a single mixed-effects model is fitted with within-cluster centered predictors and cluster-mean predictors. Two undirected networks (GGMs) are extracted: one capturing partial correlations at the within-cluster level (individual deviations from cluster means) and one at the between-cluster level (cluster means).
 
+The same multi-level GGM can also be estimated with the ml_ggm() function of the psychonetrics package. The two implementations use different estimators: mlGGM (this function) uses nodewise multilevel regression (one mixed-effects model per variable), while psychonetrics::ml_ggm estimates the full two-level covariance structure by maximum likelihood, which additionally provides model fit indices and confirmatory model testing.
+
 NOTE: This function is currently experimental and may change in future versions.
 }
 \usage{

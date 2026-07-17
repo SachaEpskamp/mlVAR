@@ -65,7 +65,8 @@ mlVARsim <- function(
   shrink_fixed = 0.9,
   shrink_deviation = 0.9,
   beta_sparsity = 0.5,
-  pcor_sparsity = 0.5
+  pcor_sparsity = 0.5,
+  maxAbsValue = 100
 ){
   contemporaneous <- "wishart"
   # contemporaneous <- match.arg(contemporaneous)
@@ -183,12 +184,8 @@ mlVARsim <- function(
         DataList <- lapply(1:nPerson,function(p){
           
           pars <- lapply(seq_len(lag),function(l)array(c(Betas[,,p]),c(nNode,nNode,lag))[,,l])
-          # If lag > 0 simulate VAR:
-          if (lag > 0){
-            res <- simulateVAR(pars, means = Mus[p,], lags = seq_len(lag), Nt = nTime[p],init = Mus[p,],burnin = 100,residuals = Theta[,,p]) 
-          } else {
-            res <- rmvnorm(nTime[p],Mus[p,],Theta[,,p])
-          }
+          # lag > 0 is guaranteed here (this branch is inside the outer `if (lag > 0)`); simulate VAR:
+          res <- simulateVAR(pars, means = Mus[p,], lags = seq_len(lag), Nt = nTime[p],init = Mus[p,],burnin = 100,residuals = Theta[,,p])
           colnames(res) <- paste0("V",1:nNode)
           res$ID <- p
           res
@@ -197,8 +194,8 @@ mlVARsim <- function(
         # Rbind data:
         Data <- do.call(rbind,DataList)
         
-        # 10. If any absolute > 10, go to 6a
-        if (!any(abs(Data[,1:nNode]) > 100)){
+        # 10. If any absolute value exceeds maxAbsValue, shrink and retry (go to 6a)
+        if (!any(abs(Data[,1:nNode]) > maxAbsValue)){
           break
         }
       } 
@@ -233,7 +230,7 @@ mlVARsim <- function(
   
   # Create the list:
   model <- list(
-    mu = modelArray(mean = mu_fixed, SD = mu_SD, subject = lapply(1:nrow(Mus),function(i)Mus[i,])),
+    mu = modelArray(mean = mu_fixed, SD = sqrt(diag(Omega[1:nNode, 1:nNode])), subject = lapply(1:nrow(Mus),function(i)Mus[i,])),
     Beta = modelArray(mean = array(beta_fixed,c(nNode,nNode,lag)), SD = array(sqrt(diag(Omega[-(1:nNode),-(1:nNode)])),c(nNode,nNode,lag)), 
                       subject = lapply(1:nPerson, function(p)array(Betas[,,p],c(nNode,nNode,lag)))),
     Omega_mu = modelCov(

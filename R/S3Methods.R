@@ -56,7 +56,17 @@ summary.mlVAR <- function(
   
   # Temporal parameters
   if ("temporal" %in% show){
-    
+
+    # Defensive: all temporal parameter arrays must have nVar^2 * nLag elements.
+    # Guards against silent R vector recycling if a results array is malformed.
+    nTemporal <- nVar^2 * nLag
+    if (length(c(object$results$Beta$mean)) != nTemporal ||
+        length(c(object$results$Beta$SE))   != nTemporal ||
+        length(c(object$results$Beta$P))    != nTemporal ||
+        length(c(object$results$Beta$SD))   != nTemporal){
+      stop("Temporal parameter arrays (Beta mean/SE/P/SD) have inconsistent lengths; cannot build summary.")
+    }
+
     TemporalDF <- data.frame(
       from  = rep(rep(vars,each=nVar),nLag),
       to =  rep(rep(vars,times=nVar),nLag),
@@ -991,9 +1001,37 @@ plot.mlVAR <-
     if (missing(order)){
       order <- x$input$vars
     }
-    
+
     if (!missing(subject) && SD){
       stop("'SD' not available for subject.")
+    }
+
+    # Validate 'lag' for temporal networks (before any bare subscript):
+    if (type == "temporal"){
+      nLags <- dim(x$results$Beta$mean)[3]
+      if (lag > nLags || lag < 1){
+        stop("'lag' exceeds the number of lags in the model (", nLags, ").")
+      }
+    }
+
+    # Validate 'subject' for network types that accept it (before any bare subscript):
+    if (!missing(subject)){
+      if (type == "temporal"){
+        nSubjects <- length(x$results$Beta$subject)
+      } else if (type == "contemporaneous"){
+        sub <- ifelse(partial, "pcor", "cor")
+        nSubjects <- length(x$results$Theta[[sub]]$subject)
+      } else {
+        nSubjects <- NA
+      }
+      if (!is.na(nSubjects)){
+        if (is.null(nSubjects) || nSubjects == 0){
+          stop("No subject-specific networks available in this model.")
+        }
+        if (!is.numeric(subject) || length(subject) != 1 || subject < 1 || subject > nSubjects){
+          stop("'subject' must be a single number between 1 and the number of subjects (", nSubjects, ").")
+        }
+      }
     }
     
     # If order is character, find ord as number. Else just set ord to order:
