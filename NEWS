@@ -1,3 +1,6 @@
+Changes in Version 0.7.2
+  - Relaxed the tolerance of the backward-compatibility test checks that involve iterative model fits (lmer/lm) from 1e-6 to 1e-3: optimizer termination differs slightly across platforms/BLAS builds (a ~5e-5 relative difference was observed on CRAN's win-builder), which is numerical jitter rather than a behavioral change. Deterministic data-generation checks keep the 1e-6 tolerance. No package code was changed
+
 Changes in Version 0.7.1
   - Fixed mlVARsample() erroring with "unused arguments (originalData = ...)". It re-fits the model by passing the stored input$ of the original fit back to mlVAR(), but that list records more than mlVAR()'s own arguments (originalData, scale_means/scale_sds and scaled are kept for predict/residuals). Only the arguments mlVAR() accepts are now passed on.
   - Fixed the example in ?mlVAR0, which simulated its data with mlVARsim0() - a function that no longer exists. It now uses mlVARsim() and the current plot API.

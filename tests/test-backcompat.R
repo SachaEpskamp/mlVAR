@@ -4,13 +4,15 @@
 #
 # All reference literals below were generated with dput(round(..., 8)) from
 # the installed, unmodified mlVAR 0.6.1 and verified byte-identical across
-# two independent Rscript runs (lmer/lm fits are deterministic given fixed
-# data; a 1e-6 tolerance is used to absorb potential BLAS-order jitter on
-# other platforms).
+# two independent Rscript runs. Deterministic data-generation checks use a
+# 1e-6 tolerance; checks involving iterative model fits (lmer/lm) use 1e-3,
+# since optimizer termination varies across platforms/BLAS builds by up to
+# ~1e-4 in relative terms (observed on win-builder), while a real behavioral
+# break would move results by far more.
 
 library(mlVAR)
 
-check <- function(name, actual, expected, tol = 1e-6) {
+check <- function(name, actual, expected, tol = 1e-3) {
   actual <- round(unname(actual), 8)
   res <- all.equal(actual, expected, tolerance = tol, check.attributes = FALSE)
   if (!isTRUE(res)) {
@@ -36,16 +38,17 @@ sim <- mlVARsim(nPerson = 8, nNode = 3, nTime = 60)
 #    and the generated data itself must stay identical regardless.
 check("mlVARsim Beta mean (model truth)", sim$model$Beta$mean,
       structure(c(0.25982487, 0, 0, 0, 0.20877215, -0.34575695,
-                  -0.47943937, 0.68017766, 0.04683755), dim = c(3L, 3L, 1L)))
+                  -0.47943937, 0.68017766, 0.04683755), dim = c(3L, 3L, 1L)),
+      tol = 1e-6)
 
 stopifnot(identical(dim(sim$Data), c(480L, 4L)))
 cat("OK: mlVARsim Data dimensions\n")
 
 check("mlVARsim Data digest (sum of abs)",
-      sum(abs(as.matrix(sim$Data[, sim$vars]))), 2265.68404)
+      sum(abs(as.matrix(sim$Data[, sim$vars]))), 2265.68404, tol = 1e-6)
 check("mlVARsim Data column sums",
       colSums(as.matrix(sim$Data[, sim$vars])),
-      c(655.59966922, -453.32070334, 242.8679717))
+      c(655.59966922, -453.32070334, 242.8679717), tol = 1e-6)
 
 # ---------------------------------------------------------------------------
 # a. Default lmer estimation (flagship path): temporal = contemporaneous =
