@@ -1,3 +1,6 @@
+Changes in Version 0.7.3
+  - Made the backward-compatibility checks of summary() output robust to rounding-boundary flips: summary.mlVAR rounds to 3 decimals, and ~5e-5 cross-platform optimizer jitter can flip the last printed digit when a value sits near a rounding boundary (observed on CRAN win-builder and Debian: 0.370 vs 0.369). The summary columns are now compared against the fit object itself (rounded identically) instead of 3-dp literals; a separate check pins the Beta standard errors against the 0.6.1 reference. No package code was changed
+
 Changes in Version 0.7.2
   - Relaxed the tolerance of the backward-compatibility test checks that involve iterative model fits (lmer/lm) from 1e-6 to 1e-3: optimizer termination differs slightly across platforms/BLAS builds (a ~5e-5 relative difference was observed on CRAN's win-builder), which is numerical jitter rather than a behavioral change. Deterministic data-generation checks keep the 1e-6 tolerance. No package code was changed
 

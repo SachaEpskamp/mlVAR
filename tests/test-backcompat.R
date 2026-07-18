@@ -135,15 +135,31 @@ check("lm/unique: subject 1 Beta", fit3$results$Beta$subject[[1]],
 # ---------------------------------------------------------------------------
 # d. summary() numeric columns of the temporal data frame
 #    (summary.mlVAR prints as a side effect; capture and discard)
+#
+#    Compared against the fit object itself (rounded to summary()'s 3 digits),
+#    NOT against 3-dp literals: cross-platform optimizer jitter of ~5e-5 can
+#    push a value across a rounding boundary and flip the last printed digit
+#    (seen on CRAN win-builder and Debian with 0.36950579 -> 0.369 vs 0.370).
+#    The underlying fit values are pinned by the checks in block a; this block
+#    verifies that summary() extracts and arranges them correctly.
 # ---------------------------------------------------------------------------
+
+# Beta SEs are not covered by block a, so pin the raw values against the
+# 3-dp reference from 0.6.1 with a tolerance wide enough to absorb the
+# reference's own rounding (max 5e-4 absolute, i.e. ~1e-2 relative on the
+# smallest SE).
+check("default lmer: Beta SEs (3-dp reference)", c(fit$results$Beta$SE),
+      c(0.147, 0.091, 0.09, 0.248, 0.06, 0.103, 0.074, 0.093, 0.126),
+      tol = 2e-2)
+
 invisible(capture.output(s <- summary(fit)))
 stopifnot(is.data.frame(s$temporal), nrow(s$temporal) == 9L)
 
-check("summary: temporal fixed effects", round(s$temporal$fixed, 6),
-      c(0.198, 0.057, -0.166, -0.184, 0.187, -0.553, -0.4, 0.717, 0.022))
-check("summary: temporal SEs", round(s$temporal$SE, 6),
-      c(0.147, 0.091, 0.09, 0.248, 0.06, 0.103, 0.074, 0.093, 0.126))
-check("summary: temporal random-effect SDs", round(s$temporal$ran_SD, 6),
-      c(0.37, 0.204, 0.138, 0.673, 0.118, 0.241, 0.127, 0.225, 0.309))
+check("summary: temporal fixed effects", s$temporal$fixed,
+      round(c(fit$results$Beta$mean), 3), tol = 1e-8)
+check("summary: temporal SEs", s$temporal$SE,
+      round(c(fit$results$Beta$SE), 3), tol = 1e-8)
+check("summary: temporal random-effect SDs", s$temporal$ran_SD,
+      round(c(fit$results$Beta$SD), 3), tol = 1e-8)
 
 cat("All backward-compatibility checks passed.\n")
